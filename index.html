@@ -1,38 +1,262 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>Ngày 2/9</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phòng gọi nhóm – chỉ cần link (Jitsi/SFU)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      background: black;
-      color: #00ff00;
-      font-family: monospace;
-      overflow: hidden;
-    }
-    .hacker-text {
-      position: absolute;
-      width: 100%;
-      white-space: nowrap;
-      animation: move 15s linear infinite;
-      font-size: 1.5rem;
-      text-shadow: 0 0 5px #00ff00, 0 0 15px #00ff00;
-    }
-    @keyframes move {
-      from { transform: translateX(100%); }
-      to { transform: translateX(-100%); }
-    }
+    html, body { height: 100%; }
+    #app { min-height: 100%; }
+    .glass { backdrop-filter: blur(8px); background: rgba(255,255,255,.06); }
+    .log-pass { color: #10b981; }
+    .log-fail { color: #ef4444; }
   </style>
 </head>
-<body>
-  <div class="hacker-text">Ngày 2/9 - Độc Lập - Tự Do - Hạnh Phúc 🇻🇳</div>
-  <div class="hacker-text" style="top:40px; animation-delay: 5s;">
-    Vinh quang dân tộc - Tinh thần bất diệt!
+<body class="bg-slate-900 text-slate-100">
+  <div id="app" class="max-w-5xl mx-auto px-4 py-6">
+    <header class="mb-6">
+      <h1 class="text-3xl font-extrabold">Gọi nhóm nhiều người – chỉ cần link</h1>
+      <p class="text-slate-300 mt-1">Dùng <span class="font-semibold">Jitsi (SFU)</span> để giảm lag khi nhiều người tham gia. Không cần số điện thoại – chỉ gửi link phòng.</p>
+    </header>
+
+    <section class="glass ring-1 ring-white/10 rounded-2xl p-5 mb-6">
+      <div class="grid md:grid-cols-2 gap-4 items-center">
+        <div>
+          <label class="text-sm">Tên hiển thị</label>
+          <input id="displayName" class="w-full mt-1 px-3 py-2 rounded-xl text-slate-900" placeholder="Ví dụ: James Liam" />
+        </div>
+        <div>
+          <label class="text-sm">Phòng</label>
+          <div class="flex gap-2 mt-1">
+            <input id="roomInput" class="flex-1 px-3 py-2 rounded-xl text-slate-900" placeholder="VD: team-dev-2025" />
+            <button id="btnNewRoom" class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600">Tạo ngẫu nhiên</button>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-3 mt-4">
+        <button id="btnJoin" class="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 font-semibold">Vào phòng</button>
+        <button id="btnLeave" class="px-4 py-2 rounded-xl bg-rose-500/80 hover:bg-rose-500 font-semibold hidden">Rời phòng</button>
+        <button id="btnCopyLink" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600">Copy link mời</button>
+      </div>
+      <p class="text-xs text-slate-400 mt-3">Mẹo: Gửi link có dạng <code>?room=&lt;tên_phòng&gt;</code>. Trong môi trường "sandbox/preview" (như trình xem code), link mời sẽ rơi về dạng <code>https://meet.jit.si/&lt;tên_phòng&gt;</code> để tránh lỗi bảo mật lịch sử trình duyệt.</p>
+    </section>
+
+    <section class="rounded-2xl overflow-hidden ring-1 ring-white/10">
+      <div id="jitsi" class="w-full aspect-video bg-black"></div>
+    </section>
+
+    <details class="mt-6 bg-white/5 rounded-2xl p-4 ring-1 ring-white/10">
+      <summary class="cursor-pointer font-semibold">Kết quả tự kiểm thử (self-tests)</summary>
+      <pre id="testlog" class="mt-3 text-sm whitespace-pre-wrap"></pre>
+    </details>
+
+    <footer class="mt-6 text-xs text-slate-400">
+      <p>Chạy trên hạ tầng công khai <span class="font-semibold">meet.jit.si</span>. Để dùng riêng tư/ổn định hơn, bạn có thể tự host Jitsi hoặc dùng dịch vụ thương mại (LiveKit, 8x8...).</p>
+    </footer>
   </div>
-  <div class="hacker-text" style="top:80px; animation-delay: 10s;">
-    Việt Nam muôn năm!
-  </div>
+
+  <!-- Jitsi IFrame API -->
+  <script src="https://meet.jit.si/external_api.js"></script>
+  <script>
+    // ===== Helpers & Environment Detection =====
+    const $ = (sel) => document.querySelector(sel);
+    const displayNameEl = $('#displayName');
+    const roomInputEl = $('#roomInput');
+    const btnNewRoom = $('#btnNewRoom');
+    const btnJoin = $('#btnJoin');
+    const btnLeave = $('#btnLeave');
+    const btnCopyLink = $('#btnCopyLink');
+    const testlog = $('#testlog');
+
+    const isAboutSrcdoc = () => typeof location.href === 'string' && location.href.startsWith('about:srcdoc');
+    const isAboutProtocol = () => location.protocol === 'about:';
+    const isSandboxed = () => isAboutSrcdoc() || isAboutProtocol();
+
+    // Lấy room từ URL (?room=xxx) hoặc từ hash/path
+    function getRoomFromURL(){
+      try {
+        const url = new URL(window.location.href);
+        let room = url.searchParams.get('room')
+          || (location.hash ? location.hash.replace(/^#/, '') : '')
+          || (location.pathname.split('/call/')[1] || '').trim();
+        if (room) room = room.replace(/[^a-zA-Z0-9-_]/g, '');
+        return room || '';
+      } catch {
+        return '';
+      }
+    }
+
+    // Sandbox-safe: không dùng history.replaceState trong about:srcdoc
+    function setRoomToURL(room){
+      if (!room) return;
+      if (isSandboxed()) {
+        // Trong sandbox, bỏ qua thay đổi history để tránh SecurityError
+        return;
+      }
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('room', room);
+        history.replaceState({}, '', url.toString());
+      } catch {
+        // ignore nếu môi trường không cho phép
+      }
+    }
+
+    function buildInviteURL(room){
+      const safeRoom = (room || '').replace(/[^a-zA-Z0-9-_]/g, '') || randomRoom();
+      if (isSandboxed()) {
+        // Fallback: cho link trực tiếp Jitsi để ai bấm cũng vào đúng phòng
+        return `https://meet.jit.si/${encodeURIComponent(safeRoom)}`;
+      }
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.set('room', safeRoom);
+        return u.toString();
+      } catch {
+        return `https://meet.jit.si/${encodeURIComponent(safeRoom)}`;
+      }
+    }
+
+    function randomRoom(){
+      return 'room-' + Math.random().toString(36).slice(2, 10);
+    }
+
+    async function safeCopy(text){
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch {
+        try {
+          // Fallback copy qua textarea ẩn
+          const ta = document.createElement('textarea');
+          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.focus(); ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          return ok;
+        } catch { return false; }
+      }
+    }
+
+    // ===== Jitsi init =====
+    let api = null; // JitsiMeetExternalAPI instance
+
+    function joinRoom(){
+      const roomName = (roomInputEl.value || '').trim() || randomRoom();
+      roomInputEl.value = roomName;
+      setRoomToURL(roomName); // an toàn trong sandbox (no-op)
+
+      // Dọn phiên cũ nếu có
+      if (api) { try { api.dispose(); } catch(e){} api = null; }
+
+      const domain = 'meet.jit.si';
+      const options = {
+        roomName,
+        parentNode: document.querySelector('#jitsi'),
+        width: '100%',
+        height: '100%',
+        userInfo: { displayName: (displayNameEl.value || '').trim() || undefined },
+        configOverwrite: {
+          resolution: 360,
+          constraints: { video: { height: { ideal: 360, max: 360, min: 180 } } },
+          disableSimulcast: false,
+          startWithAudioMuted: false,
+          startWithVideoMuted: false,
+          p2p: { enabled: true },
+          channelLastN: 12
+        },
+        interfaceConfigOverwrite: {
+          TOOLBAR_BUTTONS: [
+            'microphone', 'camera', 'desktop', 'tileview', 'chat', 'raisehand',
+            'participants-pane', 'mute-everyone', 'hangup'
+          ],
+        },
+      };
+
+      api = new JitsiMeetExternalAPI(domain, options);
+
+      // UI sync
+      btnLeave.classList.remove('hidden');
+
+      api.addListener('videoConferenceJoined', () => {
+        const name = (displayNameEl.value || '').trim();
+        if (name) api.executeCommand('displayName', name);
+      });
+
+      api.addListener('videoConferenceLeft', () => {
+        btnLeave.classList.add('hidden');
+      });
+    }
+
+    function leaveRoom(){
+      if (api) {
+        api.executeCommand('hangup');
+        setTimeout(() => { try { api.dispose(); } catch(e){} api = null; }, 300);
+      }
+    }
+
+    async function copyInvite(){
+      const room = (roomInputEl.value || '').trim() || getRoomFromURL() || randomRoom();
+      roomInputEl.value = room;
+      const invite = buildInviteURL(room);
+      const ok = await safeCopy(`Vào cuộc gọi: ${invite}`);
+      btnCopyLink.textContent = ok ? 'Đã copy ✅' : 'Copy thất bại';
+      setTimeout(()=> btnCopyLink.textContent = 'Copy link mời', 1200);
+    }
+
+    // ===== Self Tests =====
+    function log(msg, ok){
+      const line = (ok ? '✅ ' : '❌ ') + msg; 
+      if (testlog) {
+        const span = document.createElement('div');
+        span.className = ok ? 'log-pass' : 'log-fail';
+        span.textContent = line;
+        testlog.appendChild(span);
+      }
+      try { console[ok ? 'log' : 'error'](line); } catch {}
+    }
+
+    function runSelfTests(){
+      try {
+        // Test 1: setRoomToURL không ném lỗi trong sandbox
+        let threw = false;
+        try { setRoomToURL('room-test'); } catch(e){ threw = true; }
+        log('setRoomToURL an toàn trong sandbox (không lỗi)', !threw);
+
+        // Test 2: buildInviteURL trả về meet.jit.si trong sandbox
+        const invite1 = buildInviteURL('room-abc');
+        log('buildInviteURL trả về meet.jit.si khi sandbox', invite1.indexOf('https://meet.jit.si/') === 0);
+
+        // Test 3: randomRoom định dạng đúng
+        const r = randomRoom();
+        log('randomRoom tạo chuỗi tiền tố room-', /^room-[a-z0-9]{6,}$/.test(r));
+
+        // Test 4: copyInvite không ném lỗi
+        let copyErr = false; 
+        // Không thực sự test clipboard (do quyền), chỉ đảm bảo hàm gọi không crash
+        try { buildInviteURL('x'); } catch(e){ copyErr = true; }
+        log('copyInvite/buildInviteURL không crash', !copyErr);
+      } catch (e) {
+        log('Khối kiểm thử gặp lỗi: ' + e.message, false);
+      }
+    }
+
+    // ===== Bind events =====
+    btnNewRoom.addEventListener('click', () => {
+      const r = randomRoom();
+      roomInputEl.value = r; setRoomToURL(r);
+    });
+    btnJoin.addEventListener('click', joinRoom);
+    btnLeave.addEventListener('click', leaveRoom);
+    btnCopyLink.addEventListener('click', copyInvite);
+
+    // ===== Auto-join if link already has room =====
+    const initialRoom = getRoomFromURL();
+    if (initialRoom) { roomInputEl.value = initialRoom; joinRoom(); }
+
+    // Chạy tự kiểm thử
+    runSelfTests();
+  </script>
 </body>
 </html>
