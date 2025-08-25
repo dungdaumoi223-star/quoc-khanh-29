@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Phòng gọi nhóm – chỉ cần link (Jitsi/SFU)</title>
+  <title>Phòng gọi nhóm – chỉ cần link (Jitsi/SFU) — bản sửa lỗi</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html, body { height: 100%; }
@@ -11,13 +11,15 @@
     .glass { backdrop-filter: blur(8px); background: rgba(255,255,255,.06); }
     .log-pass { color: #10b981; }
     .log-fail { color: #ef4444; }
+    .note { color: #fbbf24; }
+    pre { white-space: pre-wrap; }
   </style>
 </head>
 <body class="bg-slate-900 text-slate-100">
   <div id="app" class="max-w-5xl mx-auto px-4 py-6">
     <header class="mb-6">
       <h1 class="text-3xl font-extrabold">Gọi nhóm nhiều người – chỉ cần link</h1>
-      <p class="text-slate-300 mt-1">Dùng <span class="font-semibold">Jitsi (SFU)</span> để giảm lag khi nhiều người tham gia. Không cần số điện thoại – chỉ gửi link phòng.</p>
+      <p class="text-slate-300 mt-1">Bản này đã sửa lỗi "<code>JitsiMeetExternalAPI is not defined</code>" khi môi trường preview/sandbox chặn tải script. Nó tải API động, có fallback an toàn.</p>
     </header>
 
     <section class="glass ring-1 ring-white/10 rounded-2xl p-5 mb-6">
@@ -39,7 +41,8 @@
         <button id="btnLeave" class="px-4 py-2 rounded-xl bg-rose-500/80 hover:bg-rose-500 font-semibold hidden">Rời phòng</button>
         <button id="btnCopyLink" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600">Copy link mời</button>
       </div>
-      <p class="text-xs text-slate-400 mt-3">Mẹo: Gửi link có dạng <code>?room=&lt;tên_phòng&gt;</code>. Trong môi trường "sandbox/preview" (như trình xem code), link mời sẽ rơi về dạng <code>https://meet.jit.si/&lt;tên_phòng&gt;</code> để tránh lỗi bảo mật lịch sử trình duyệt.</p>
+      <p class="text-xs text-slate-400 mt-3">Mẹo: Gửi link có dạng <code>?room=&lt;tên_phòng&gt;</code>. Trong sandbox/preview (ví dụ <code>about:srcdoc</code>) trang sẽ sử dụng fallback <code>https://meet.jit.si/&lt;tên_phòng&gt;</code> để tránh lỗi.</p>
+      <div id="apiStatus" class="mt-2 text-sm note"></div>
     </section>
 
     <section class="rounded-2xl overflow-hidden ring-1 ring-white/10">
@@ -48,16 +51,14 @@
 
     <details class="mt-6 bg-white/5 rounded-2xl p-4 ring-1 ring-white/10">
       <summary class="cursor-pointer font-semibold">Kết quả tự kiểm thử (self-tests)</summary>
-      <pre id="testlog" class="mt-3 text-sm whitespace-pre-wrap"></pre>
+      <pre id="testlog" class="mt-3 text-sm"></pre>
     </details>
 
     <footer class="mt-6 text-xs text-slate-400">
-      <p>Chạy trên hạ tầng công khai <span class="font-semibold">meet.jit.si</span>. Để dùng riêng tư/ổn định hơn, bạn có thể tự host Jitsi hoặc dùng dịch vụ thương mại (LiveKit, 8x8...).</p>
+      <p>Chạy trên hạ tầng công khai <span class="font-semibold">meet.jit.si</span>. Nếu bạn muốn host riêng, mình sẽ hướng dẫn cách deploy Jitsi/LiveKit.</p>
     </footer>
   </div>
 
-  <!-- Jitsi IFrame API -->
-  <script src="https://meet.jit.si/external_api.js"></script>
   <script>
     // ===== Helpers & Environment Detection =====
     const $ = (sel) => document.querySelector(sel);
@@ -68,12 +69,13 @@
     const btnLeave = $('#btnLeave');
     const btnCopyLink = $('#btnCopyLink');
     const testlog = $('#testlog');
+    const apiStatus = $('#apiStatus');
 
     const isAboutSrcdoc = () => typeof location.href === 'string' && location.href.startsWith('about:srcdoc');
     const isAboutProtocol = () => location.protocol === 'about:';
     const isSandboxed = () => isAboutSrcdoc() || isAboutProtocol();
 
-    // Lấy room từ URL (?room=xxx) hoặc từ hash/path
+    // ===== URL helpers =====
     function getRoomFromURL(){
       try {
         const url = new URL(window.location.href);
@@ -87,33 +89,28 @@
       }
     }
 
-    // Sandbox-safe: không dùng history.replaceState trong about:srcdoc
+    // Không gọi history.replaceState trong sandbox (fix SecurityError)
     function setRoomToURL(room){
       if (!room) return;
-      if (isSandboxed()) {
-        // Trong sandbox, bỏ qua thay đổi history để tránh SecurityError
-        return;
-      }
+      if (isSandboxed()) return; // no-op
       try {
         const url = new URL(window.location.href);
         url.searchParams.set('room', room);
         history.replaceState({}, '', url.toString());
-      } catch {
-        // ignore nếu môi trường không cho phép
+      } catch (e) {
+        // ignore — nếu trang bị CSP hoặc origin khác
+        console.warn('setRoomToURL ignored:', e && e.message);
       }
     }
 
     function buildInviteURL(room){
       const safeRoom = (room || '').replace(/[^a-zA-Z0-9-_]/g, '') || randomRoom();
-      if (isSandboxed()) {
-        // Fallback: cho link trực tiếp Jitsi để ai bấm cũng vào đúng phòng
-        return `https://meet.jit.si/${encodeURIComponent(safeRoom)}`;
-      }
+      if (isSandboxed()) return `https://meet.jit.si/${encodeURIComponent(safeRoom)}`;
       try {
         const u = new URL(window.location.href);
         u.searchParams.set('room', safeRoom);
         return u.toString();
-      } catch {
+      } catch (e) {
         return `https://meet.jit.si/${encodeURIComponent(safeRoom)}`;
       }
     }
@@ -128,7 +125,6 @@
         return true;
       } catch {
         try {
-          // Fallback copy qua textarea ẩn
           const ta = document.createElement('textarea');
           ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
           document.body.appendChild(ta); ta.focus(); ta.select();
@@ -139,61 +135,119 @@
       }
     }
 
-    // ===== Jitsi init =====
-    let api = null; // JitsiMeetExternalAPI instance
+    // ===== Dynamic loader for Jitsi external_api.js =====
+    // Returns true if API is available (either previously present or loaded), false on failure/timeout
+    function loadJitsiApi(timeoutMs = 4000) {
+      return new Promise((resolve) => {
+        try {
+          if (typeof window.JitsiMeetExternalAPI !== 'undefined') return resolve(true);
+          // Don't attempt network loads when clearly sandboxed; resolve false quickly
+          if (isSandboxed()) return resolve(false);
 
-    function joinRoom(){
+          const src = 'https://meet.jit.si/external_api.js';
+          const existing = Array.from(document.getElementsByTagName('script')).find(s => s.src === src);
+          if (existing) {
+            // If there's already a script tag, wait a bit for it to load/use
+            const checkInterval = setInterval(() => {
+              if (typeof window.JitsiMeetExternalAPI !== 'undefined') { clearInterval(checkInterval); resolve(true); }
+            }, 200);
+            setTimeout(() => { clearInterval(checkInterval); resolve(typeof window.JitsiMeetExternalAPI !== 'undefined'); }, timeoutMs);
+            return;
+          }
+
+          const s = document.createElement('script');
+          s.src = src;
+          s.async = true;
+          let settled = false;
+          s.onload = () => { settled = true; resolve(typeof window.JitsiMeetExternalAPI !== 'undefined'); };
+          s.onerror = () => { settled = true; resolve(false); };
+          document.head.appendChild(s);
+          setTimeout(() => { if (!settled) resolve(typeof window.JitsiMeetExternalAPI !== 'undefined'); }, timeoutMs);
+        } catch (e) { resolve(false); }
+      });
+    }
+
+    // ===== Jitsi embedding and fallback logic =====
+    let api = null;
+
+    function createJitsiInstance(roomName) {
+      try {
+        const domain = 'meet.jit.si';
+        const options = {
+          roomName,
+          parentNode: document.querySelector('#jitsi'),
+          width: '100%',
+          height: '100%',
+          userInfo: { displayName: (displayNameEl.value || '').trim() || undefined },
+          configOverwrite: {
+            resolution: 360,
+            constraints: { video: { height: { ideal: 360, max: 360, min: 180 } } },
+            disableSimulcast: false,
+            startWithAudioMuted: false,
+            startWithVideoMuted: false,
+            p2p: { enabled: true },
+            channelLastN: 12
+          },
+          interfaceConfigOverwrite: { TOOLBAR_BUTTONS: [ 'microphone','camera','desktop','tileview','chat','raisehand','participants-pane','mute-everyone','hangup' ] }
+        };
+        api = new JitsiMeetExternalAPI(domain, options);
+        btnLeave.classList.remove('hidden');
+        api.addListener('videoConferenceJoined', () => {
+          const name = (displayNameEl.value || '').trim();
+          if (name) try { api.executeCommand('displayName', name); } catch (e) {}
+        });
+        api.addListener('videoConferenceLeft', () => { btnLeave.classList.add('hidden'); });
+        return true;
+      } catch (e) {
+        console.error('createJitsiInstance error', e);
+        api = null;
+        return false;
+      }
+    }
+
+    async function joinRoom(){
       const roomName = (roomInputEl.value || '').trim() || randomRoom();
       roomInputEl.value = roomName;
-      setRoomToURL(roomName); // an toàn trong sandbox (no-op)
+      setRoomToURL(roomName); // safe no-op in sandbox
 
-      // Dọn phiên cũ nếu có
+      // dispose previous if exists
       if (api) { try { api.dispose(); } catch(e){} api = null; }
 
-      const domain = 'meet.jit.si';
-      const options = {
-        roomName,
-        parentNode: document.querySelector('#jitsi'),
-        width: '100%',
-        height: '100%',
-        userInfo: { displayName: (displayNameEl.value || '').trim() || undefined },
-        configOverwrite: {
-          resolution: 360,
-          constraints: { video: { height: { ideal: 360, max: 360, min: 180 } } },
-          disableSimulcast: false,
-          startWithAudioMuted: false,
-          startWithVideoMuted: false,
-          p2p: { enabled: true },
-          channelLastN: 12
-        },
-        interfaceConfigOverwrite: {
-          TOOLBAR_BUTTONS: [
-            'microphone', 'camera', 'desktop', 'tileview', 'chat', 'raisehand',
-            'participants-pane', 'mute-everyone', 'hangup'
-          ],
-        },
-      };
+      apiStatus.textContent = '';
 
-      api = new JitsiMeetExternalAPI(domain, options);
+      const hasApi = (typeof window.JitsiMeetExternalAPI !== 'undefined');
+      if (hasApi) {
+        const ok = createJitsiInstance(roomName);
+        if (ok) { apiStatus.textContent = 'Vào phòng (nhúng) — Jitsi API có sẵn.'; return; }
+        // if create failed, fallthrough to try dynamic loading or fallback
+      }
 
-      // UI sync
-      btnLeave.classList.remove('hidden');
+      // Try to load dynamically (if allowed)
+      apiStatus.textContent = 'Đang cố nạp Jitsi API...';
+      const loaded = await loadJitsiApi(4000);
+      if (loaded && typeof window.JitsiMeetExternalAPI !== 'undefined') {
+        const ok = createJitsiInstance(roomName);
+        if (ok) { apiStatus.textContent = 'Vào phòng (nhúng) — Jitsi API đã nạp.'; return; }
+      }
 
-      api.addListener('videoConferenceJoined', () => {
-        const name = (displayNameEl.value || '').trim();
-        if (name) api.executeCommand('displayName', name);
-      });
-
-      api.addListener('videoConferenceLeft', () => {
-        btnLeave.classList.add('hidden');
-      });
+      // Fallback: open meet.jit.si in a new tab (safe for sandbox/preview)
+      apiStatus.textContent = 'Không nạp được Jitsi API — mở meet.jit.si (fallback).';
+      try {
+        window.open(buildInviteURL(roomName), '_blank');
+      } catch (e) {
+        // Nếu window.open bị chặn, hiển thị link để user bấm
+        apiStatus.textContent = 'Không thể mở tab tự động. Link mời: ' + buildInviteURL(roomName);
+        console.warn('Fallback open failed:', e);
+      }
     }
 
     function leaveRoom(){
       if (api) {
-        api.executeCommand('hangup');
-        setTimeout(() => { try { api.dispose(); } catch(e){} api = null; }, 300);
+        try { api.executeCommand('hangup'); } catch(e){}
+        try { api.dispose(); } catch(e){}
+        api = null;
       }
+      btnLeave.classList.add('hidden');
     }
 
     async function copyInvite(){
@@ -205,58 +259,83 @@
       setTimeout(()=> btnCopyLink.textContent = 'Copy link mời', 1200);
     }
 
-    // ===== Self Tests =====
-    function log(msg, ok){
-      const line = (ok ? '✅ ' : '❌ ') + msg; 
-      if (testlog) {
-        const span = document.createElement('div');
-        span.className = ok ? 'log-pass' : 'log-fail';
-        span.textContent = line;
-        testlog.appendChild(span);
-      }
-      try { console[ok ? 'log' : 'error'](line); } catch {}
+    // ===== Self-tests (mở rộng) =====
+    function appendTest(msg, ok){
+      const el = document.createElement('div');
+      el.className = ok ? 'log-pass' : 'log-fail';
+      el.textContent = (ok ? '✅ ' : '❌ ') + msg;
+      if (testlog) testlog.appendChild(el);
+      try { console[ok ? 'log' : 'error']((ok ? 'PASS: ' : 'FAIL: ') + msg); } catch {}
     }
 
-    function runSelfTests(){
+    async function runSelfTests(){
+      // Test A: setRoomToURL không ném lỗi trong sandbox
+      let threw = false; try { setRoomToURL('room-test'); } catch(e){ threw = true; }
+      appendTest('setRoomToURL an toàn (không ném lỗi)', !threw);
+
+      // Test B: buildInviteURL trả về meet.jit.si khi sandbox
+      const invite = buildInviteURL('room-abc-123');
+      appendTest('buildInviteURL trả về meet.jit.si khi sandbox/preview', invite.indexOf('https://meet.jit.si/') === 0);
+
+      // Test C: randomRoom định dạng
+      const r = randomRoom(); appendTest('randomRoom định dạng bắt đầu bằng "room-"', /^room-[a-z0-9]{6,}$/.test(r));
+
+      // Test D: loadJitsiApi không ném và trả về boolean
       try {
-        // Test 1: setRoomToURL không ném lỗi trong sandbox
-        let threw = false;
-        try { setRoomToURL('room-test'); } catch(e){ threw = true; }
-        log('setRoomToURL an toàn trong sandbox (không lỗi)', !threw);
+        const res = await loadJitsiApi(1000); // ngắn để test nhanh — trong sandbox thường false
+        appendTest('loadJitsiApi trả về boolean (ok=' + !!res + ')', typeof res === 'boolean');
+      } catch(e) { appendTest('loadJitsiApi ném lỗi: ' + e.message, false); }
 
-        // Test 2: buildInviteURL trả về meet.jit.si trong sandbox
-        const invite1 = buildInviteURL('room-abc');
-        log('buildInviteURL trả về meet.jit.si khi sandbox', invite1.indexOf('https://meet.jit.si/') === 0);
+      // Test E: joinRoom fallback khi API không tồn tại — stub window.open to capture
+      try {
+        const prevOpen = window.open;
+        let opened = false; let openedUrl = null;
+        window.open = function(url, target){ opened = true; openedUrl = url; return { url, target }; };
+        try { await (async ()=>{ await joinRoom(); })(); } catch(e) { /* ignore */ }
+        appendTest('joinRoom fallback gọi window.open khi API không có (opened=' + !!opened + ')', opened === true);
+        appendTest('URL mở ra hợp lệ', typeof openedUrl === 'string' && openedUrl.indexOf('https://') === 0);
+        window.open = prevOpen;
+      } catch(e) { appendTest('joinRoom fallback kiểm thử lỗi: ' + e.message, false); }
 
-        // Test 3: randomRoom định dạng đúng
-        const r = randomRoom();
-        log('randomRoom tạo chuỗi tiền tố room-', /^room-[a-z0-9]{6,}$/.test(r));
+      // Test F: giả lập Jitsi API tồn tại và kiểm tra createJitsiInstance không ném
+      try {
+        // Lưu API thật (nếu có)
+        const realAPI = window.JitsiMeetExternalAPI;
+        // Tạo stub constructor
+        function StubAPI(domain, opts){
+          this._domain = domain; this._opts = opts;
+          this.dispose = function(){};
+          this.executeCommand = function(){};
+          this.addListener = function(){};
+        }
+        window.JitsiMeetExternalAPI = StubAPI;
+        // đảm bảo DOM #jitsi rỗng
+        const j = document.querySelector('#jitsi'); if (j) j.innerHTML = '';
+        const prevOpen = window.open; // tránh fallback mở tab
+        window.open = function(){};
+        let created = false;
+        try { await (async ()=>{ await joinRoom(); created = !!api; })(); } catch(e){ created = false; }
+        appendTest('joinRoom khi có Jitsi API (stub) nên tạo được instance', created === true);
+        // cleanup
+        leaveRoom();
+        window.JitsiMeetExternalAPI = realAPI;
+        window.open = prevOpen;
+      } catch(e) { appendTest('joinRoom với stub Jitsi API gặp lỗi: ' + e.message, false); }
 
-        // Test 4: copyInvite không ném lỗi
-        let copyErr = false; 
-        // Không thực sự test clipboard (do quyền), chỉ đảm bảo hàm gọi không crash
-        try { buildInviteURL('x'); } catch(e){ copyErr = true; }
-        log('copyInvite/buildInviteURL không crash', !copyErr);
-      } catch (e) {
-        log('Khối kiểm thử gặp lỗi: ' + e.message, false);
-      }
+      appendTest('Self-tests hoàn tất', true);
     }
 
     // ===== Bind events =====
-    btnNewRoom.addEventListener('click', () => {
-      const r = randomRoom();
-      roomInputEl.value = r; setRoomToURL(r);
-    });
-    btnJoin.addEventListener('click', joinRoom);
+    btnNewRoom.addEventListener('click', () => { const r = randomRoom(); roomInputEl.value = r; setRoomToURL(r); });
+    btnJoin.addEventListener('click', async () => { apiStatus.textContent = 'Khởi tạo...'; const ok = await loadJitsiApi(5000); if (!ok) apiStatus.textContent = 'Không nạp được Jitsi API — sẽ dùng fallback.'; await joinRoom(); });
     btnLeave.addEventListener('click', leaveRoom);
     btnCopyLink.addEventListener('click', copyInvite);
 
-    // ===== Auto-join if link already has room =====
-    const initialRoom = getRoomFromURL();
-    if (initialRoom) { roomInputEl.value = initialRoom; joinRoom(); }
+    // Auto-fill room input but DO NOT auto-join (avoids popup & blocked loads in preview)
+    const initialRoom = getRoomFromURL(); if (initialRoom) roomInputEl.value = initialRoom;
 
-    // Chạy tự kiểm thử
-    runSelfTests();
+    // Kích hoạt tự kiểm thử sau khi trang sẵn sàng
+    window.addEventListener('load', () => { setTimeout(() => { runSelfTests(); }, 300); });
   </script>
 </body>
 </html>
