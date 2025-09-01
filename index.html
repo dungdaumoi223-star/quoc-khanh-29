@@ -3,339 +3,216 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Phòng gọi nhóm – chỉ cần link (Jitsi/SFU) — bản sửa lỗi</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>🎇 Quốc khánh 2/9 — Hoành tráng</title>
+  <meta name="description" content="Trang chúc mừng Quốc khánh 2/9: nhạc nền, pháo hoa nâng cấp, cờ rơi, banner động, máy bay bay qua, popup lời chúc - tất cả trong 1 file HTML." />
   <style>
-    html, body { height: 100%; }
-    #app { min-height: 100%; }
-    .glass { backdrop-filter: blur(8px); background: rgba(255,255,255,.06); }
-    .log-pass { color: #10b981; }
-    .log-fail { color: #ef4444; }
-    .note { color: #fbbf24; }
-    pre { white-space: pre-wrap; }
+    :root{--bg1:#070617;--bg2:#160018;--gold:#ffe000;--red:#da1212}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#fff;overflow:hidden}
+    .wrap{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:18px;padding:20px}
+    header{display:flex;gap:12px;align-items:center;width:100%;max-width:1200px}
+    .logo{display:flex;align-items:center;gap:10px}
+    .logo .flag-sm{width:48px;height:30px;background:var(--red);border-radius:4px;position:relative;box-shadow:0 6px 18px #0008}
+    .logo .flag-sm::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;background:var(--gold);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+    h1{font-size:clamp(26px,4vw,44px);margin:0;font-weight:800;letter-spacing:0.8px;text-transform:uppercase}
+    .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    .btn{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));padding:9px 12px;border-radius:12px;border:1px solid #ffffff22;color:#fff;cursor:pointer;font-weight:700}
+
+    /* Hero */
+    .hero{width:100%;max-width:1200px;display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+    @media (max-width:980px){.hero{grid-template-columns:1fr}}
+    .left{position:relative;padding:18px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));box-shadow:0 20px 60px #000a}
+    .right{padding:18px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,0.03),transparent)}
+
+    /* Banner */
+    .banner{font-weight:900;font-size:28px;padding:14px;border-radius:14px;background:linear-gradient(90deg,#ff5959,#ffb86b);color:#1d0a00;display:flex;align-items:center;gap:12px;overflow:hidden}
+    .banner .marquee{white-space:nowrap;display:inline-block;animation:marq 14s linear infinite}
+    @keyframes marq{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+
+    /* Flag + star */
+    .flag-big{width:100%;height:380px;background:linear-gradient(180deg,var(--red),#b30b0b);border-radius:14px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+    .flag-big::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 20%, rgba(255,255,255,.03), transparent 30%);} 
+    .star{width:160px;height:160px;background:var(--gold);filter:drop-shadow(0 12px 28px #0008);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);transform:scale(1);animation:starpop 2.4s ease-in-out infinite}
+    @keyframes starpop{0%{transform:scale(.98) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(.98) rotate(-2deg)}}
+
+    /* Count boxes */
+    .countwrap{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+    .pill{background:rgba(0,0,0,0.35);padding:12px 16px;border-radius:12px;min-width:90px;text-align:center}
+    .pill .n{font-size:28px;font-weight:900}
+    .pill .l{font-size:12px;opacity:.9;margin-top:4px}
+
+    /* small panel */
+    .panel{display:flex;flex-direction:column;gap:12px}
+    .panel .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));padding:12px;border-radius:12px}
+
+    /* floating elements */
+    .sky-canvas{position:absolute;inset:0;pointer-events:none}
+    .floaters{position:absolute;inset:0;pointer-events:none}
+
+    /* popup */
+    .popup{position:fixed;left:50%;top:12%;transform:translateX(-50%) scale(.9);padding:18px 22px;background:linear-gradient(180deg,#fff1 0,#fff0 60%);border-radius:18px;border:1px solid #ffffff22;color:#fff;font-weight:800;backdrop-filter:blur(6px);box-shadow:0 30px 80px #000a;opacity:0;pointer-events:none}
+    .popup.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto;animation:pop .7s cubic-bezier(.2,.9,.2,1)}
+    @keyframes pop{0%{transform:translateX(-50%) scale(.6) translateY(-10px)}60%{transform:translateX(-50%) scale(1.05)}100%{transform:translateX(-50%) scale(1)}}
+
+    /* falling flags/emojis */
+    .falling-item{position:fixed;will-change:transform;pointer-events:none}
+
+    footer{position:fixed;left:12px;bottom:12px;font-size:13px;opacity:.85}
+
+    /* responsive tweaks */
+    @media (max-width:640px){.flag-big{height:220px}.star{width:110px;height:110px}}
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100">
-  <div id="app" class="max-w-5xl mx-auto px-4 py-6">
-    <header class="mb-6">
-      <h1 class="text-3xl font-extrabold">Gọi nhóm nhiều người – chỉ cần link</h1>
-      <p class="text-slate-300 mt-1">Bản này đã sửa lỗi "<code>JitsiMeetExternalAPI is not defined</code>" khi môi trường preview/sandbox chặn tải script. Nó tải API động, có fallback an toàn.</p>
+<body>
+  <!-- canvases for stars/planes/fireworks/confetti -->
+  <canvas id="sky" class="sky-canvas"></canvas>
+  <canvas id="fw" class="sky-canvas"></canvas>
+  <div class="wrap">
+    <header>
+      <div class="logo"><div class="flag-sm"></div><h1>Quốc khánh 2/9</h1></div>
+      <div class="controls">
+        <button class="btn" id="musicToggle">Nhạc: tắt</button>
+        <button class="btn" id="autoToggle">Tự động pháo hoa: Bật</button>
+        <button class="btn" id="flagsToggle">Cờ rơi: Bật</button>
+        <button class="btn" id="shareBtn">Chia sẻ</button>
+        <button class="btn" id="fullBtn">Toàn màn hình</button>
+      </div>
     </header>
 
-    <section class="glass ring-1 ring-white/10 rounded-2xl p-5 mb-6">
-      <div class="grid md:grid-cols-2 gap-4 items-center">
-        <div>
-          <label class="text-sm">Tên hiển thị</label>
-          <input id="displayName" class="w-full mt-1 px-3 py-2 rounded-xl text-slate-900" placeholder="Ví dụ: James Liam" />
+    <div class="hero">
+      <div class="left">
+        <div class="banner"><div class="marquee">Việt Nam muôn năm! • Quốc khánh 2/9 • Độc lập - Tự do - Hạnh phúc • Việt Nam thắng lợi!</div></div>
+
+        <div class="flag-big" id="flagBig">
+          <div class="star" id="star"></div>
+          <div class="floaters" id="floaters"></div>
         </div>
-        <div>
-          <label class="text-sm">Phòng</label>
-          <div class="flex gap-2 mt-1">
-            <input id="roomInput" class="flex-1 px-3 py-2 rounded-xl text-slate-900" placeholder="VD: team-dev-2025" />
-            <button id="btnNewRoom" class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600">Tạo ngẫu nhiên</button>
-          </div>
+
+        <div class="countwrap" style="justify-content:center">
+          <div class="pill"><div class="n" id="D">--</div><div class="l">NGÀY</div></div>
+          <div class="pill"><div class="n" id="H">--</div><div class="l">GIỜ</div></div>
+          <div class="pill"><div class="n" id="M">--</div><div class="l">PHÚT</div></div>
+          <div class="pill"><div class="n" id="S">--</div><div class="l">GIÂY</div></div>
         </div>
       </div>
-      <div class="flex flex-wrap gap-3 mt-4">
-        <button id="btnJoin" class="px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 font-semibold">Vào phòng</button>
-        <button id="btnLeave" class="px-4 py-2 rounded-xl bg-rose-500/80 hover:bg-rose-500 font-semibold hidden">Rời phòng</button>
-        <button id="btnCopyLink" class="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600">Copy link mời</button>
-      </div>
-      <p class="text-xs text-slate-400 mt-3">Mẹo: Gửi link có dạng <code>?room=&lt;tên_phòng&gt;</code>. Trong sandbox/preview (ví dụ <code>about:srcdoc</code>) trang sẽ sử dụng fallback <code>https://meet.jit.si/&lt;tên_phòng&gt;</code> để tránh lỗi.</p>
-      <div id="apiStatus" class="mt-2 text-sm note"></div>
-    </section>
 
-    <section class="rounded-2xl overflow-hidden ring-1 ring-white/10">
-      <div id="jitsi" class="w-full aspect-video bg-black"></div>
-    </section>
+      <aside class="right panel">
+        <div class="card">
+          <strong>Hiệu ứng</strong>
+          <p style="margin:8px 0 0 0">- Nhấn bất kỳ chỗ trống để bắn pháo hoa. <br>- Pháo hoa tự bật khi đếm về 0. <br>- Tắt/mở âm nhạc bằng nút "Nhạc".</p>
+        </div>
+        <div class="card">
+          <strong>Lưu & chia sẻ</strong>
+          <p style="margin:8px 0">Bạn có thể chụp màn hình hoặc dùng nút <em>Chia sẻ</em> để gửi link.</p>
+        </div>
+        <div class="card">
+          <strong>Tùy chỉnh nhanh</strong>
+          <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="burstNow">Bắn ngay</button><button class="btn" id="popupNow">Lời chúc</button></div>
+        </div>
+      </aside>
+    </div>
 
-    <details class="mt-6 bg-white/5 rounded-2xl p-4 ring-1 ring-white/10">
-      <summary class="cursor-pointer font-semibold">Kết quả tự kiểm thử (self-tests)</summary>
-      <pre id="testlog" class="mt-3 text-sm"></pre>
-    </details>
+    <div id="popup" class="popup">Chúc mừng Quốc khánh 2/9 — Việt Nam muôn năm! 🇻🇳</div>
 
-    <footer class="mt-6 text-xs text-slate-400">
-      <p>Chạy trên hạ tầng công khai <span class="font-semibold">meet.jit.si</span>. Nếu bạn muốn host riêng, mình sẽ hướng dẫn cách deploy Jitsi/LiveKit.</p>
-    </footer>
+    <footer>Made with ❤️ • Nhấp để bắn pháo hoa • Tùy chỉnh thoải mái</footer>
   </div>
 
-  <script>
-    // ===== Helpers & Environment Detection =====
-    const $ = (sel) => document.querySelector(sel);
-    const displayNameEl = $('#displayName');
-    const roomInputEl = $('#roomInput');
-    const btnNewRoom = $('#btnNewRoom');
-    const btnJoin = $('#btnJoin');
-    const btnLeave = $('#btnLeave');
-    const btnCopyLink = $('#btnCopyLink');
-    const testlog = $('#testlog');
-    const apiStatus = $('#apiStatus');
+<script>
+// -------------------- Utilities --------------------
+const $ = sel => document.querySelector(sel);
+const rand = (a,b)=> Math.random()*(b-a)+a;
 
-    const isAboutSrcdoc = () => typeof location.href === 'string' && location.href.startsWith('about:srcdoc');
-    const isAboutProtocol = () => location.protocol === 'about:';
-    const isSandboxed = () => isAboutSrcdoc() || isAboutProtocol();
+// -------------------- Countdown --------------------
+const now = new Date();
+const thisYear = now.getFullYear();
+let target = new Date(thisYear,8,2,0,0,0);
+if(now>target) target = new Date(thisYear+1,8,2,0,0,0);
+function updCountdown(){
+  const s=Math.max(0, Math.floor((target - new Date())/1000));
+  const d = Math.floor(s/86400); const h = Math.floor((s%86400)/3600); const m = Math.floor((s%3600)/60); const sec = s%60;
+  $('#D').textContent=d; $('#H').textContent=String(h).padStart(2,'0'); $('#M').textContent=String(m).padStart(2,'0'); $('#S').textContent=String(sec).padStart(2,'0');
+  if(s===0 && autoFireEnabled && !autoStarted){autoStarted=true; doGrandShow();}
+}
+setInterval(updCountdown,1000); updCountdown();
 
-    // ===== URL helpers =====
-    function getRoomFromURL(){
-      try {
-        const url = new URL(window.location.href);
-        let room = url.searchParams.get('room')
-          || (location.hash ? location.hash.replace(/^#/, '') : '')
-          || (location.pathname.split('/call/')[1] || '').trim();
-        if (room) room = room.replace(/[^a-zA-Z0-9-_]/g, '');
-        return room || '';
-      } catch {
-        return '';
-      }
-    }
+// -------------------- Background stars & plane --------------------
+const sky = document.getElementById('sky'); const sctx=sky.getContext('2d');
+function resize(){sky.width=innerWidth; sky.height=innerHeight; fw.width=innerWidth; fw.height=innerHeight;}
+window.addEventListener('resize',resize); const fw = document.getElementById('fw'); const fctx = fw.getContext('2d'); resize();
 
-    // Không gọi history.replaceState trong sandbox (fix SecurityError)
-    function setRoomToURL(room){
-      if (!room) return;
-      if (isSandboxed()) return; // no-op
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('room', room);
-        history.replaceState({}, '', url.toString());
-      } catch (e) {
-        // ignore — nếu trang bị CSP hoặc origin khác
-        console.warn('setRoomToURL ignored:', e && e.message);
-      }
-    }
+const stars = Array.from({length:160}).map(()=>({x:rand(0,sky.width),y:rand(0,sky.height/2),r:rand(.3,1.6),alpha:rand(.3,1)}));
+let planeX = -200; function drawSky(){ sctx.clearRect(0,0,sky.width,sky.height);
+  // gradient
+  const g = sctx.createLinearGradient(0,0,0,sky.height); g.addColorStop(0,'#0b0b1a'); g.addColorStop(1,'#2b002b'); sctx.fillStyle=g; sctx.fillRect(0,0,sky.width,sky.height);
+  // stars
+  for(const st of stars){ sctx.beginPath(); sctx.globalAlpha=st.alpha; sctx.fillStyle='white'; sctx.arc(st.x,st.y,st.r,0,Math.PI*2); sctx.fill(); }
+  sctx.globalAlpha=1;
+  // plane / dove silhouette
+  planeX += 1.4; if(planeX>sky.width+200) planeX=-200;
+  sctx.save(); sctx.translate(planeX, 80 + Math.sin(Date.now()/1000)*12); sctx.fillStyle='rgba(255,255,255,0.09)'; sctx.beginPath(); sctx.moveTo(-60,0); sctx.quadraticCurveTo(0,-18,60,0); sctx.quadraticCurveTo(10,8,-60,0); sctx.fill(); sctx.restore();
+  requestAnimationFrame(drawSky);
+}
+drawSky();
 
-    function buildInviteURL(room){
-      const safeRoom = (room || '').replace(/[^a-zA-Z0-9-_]/g, '') || randomRoom();
-      if (isSandboxed()) return `https://meet.jit.si/${encodeURIComponent(safeRoom)}`;
-      try {
-        const u = new URL(window.location.href);
-        u.searchParams.set('room', safeRoom);
-        return u.toString();
-      } catch (e) {
-        return `https://meet.jit.si/${encodeURIComponent(safeRoom)}`;
-      }
-    }
+// -------------------- Falling flags/emojis --------------------
+let flagsEnabled = true; const fallPool=[]; const EMO=['🇻🇳','🎉','🎊','✨','🎆','❤️'];
+function spawnFalling(){ if(!flagsEnabled) return; const el = document.createElement('div'); el.className='falling-item'; el.style.left = Math.random()*100+'vw'; el.style.top='-6vh'; el.style.fontSize = (12+Math.random()*28)+'px'; el.style.transform = `translateY(-10vh)`; el.style.opacity=1; el.textContent = Math.random()<0.6? '🇻🇳' : EMO[Math.floor(Math.random()*EMO.length)]; document.body.appendChild(el);
+  const dur = 6000 + Math.random()*7000; el.animate([{transform:'translateY(0vh) rotate(0deg)'},{transform:`translateY(${120+Math.random()*60}vh) rotate(${Math.random()*720-360}deg)`}],{duration:dur,iterations:1,easing:'linear'}).onfinish=()=>el.remove();}
+setInterval(spawnFalling, 450);
 
-    function randomRoom(){
-      return 'room-' + Math.random().toString(36).slice(2, 10);
-    }
+// -------------------- Floaters on flag --------------------
+const floaters = document.getElementById('floaters'); function addFloater(){ const d=document.createElement('div'); d.style.position='absolute'; d.style.left=rand(4,86)+'%'; d.style.bottom='-6%'; d.style.fontSize=rand(16,28)+'px'; d.style.opacity=.95; d.textContent = EMO[Math.floor(Math.random()*EMO.length)]; floaters.appendChild(d); d.animate([{transform:'translateY(0)'},{transform:'translateY(-120px)'}],{duration:4000+Math.random()*3000}).onfinish=()=>d.remove(); }
+setInterval(()=>{ if(Math.random()<.6) addFloater(); },800);
 
-    async function safeCopy(text){
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch {
-        try {
-          const ta = document.createElement('textarea');
-          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-          document.body.appendChild(ta); ta.focus(); ta.select();
-          const ok = document.execCommand('copy');
-          document.body.removeChild(ta);
-          return ok;
-        } catch { return false; }
-      }
-    }
+// -------------------- Fireworks (upgraded) --------------------
+const particles=[]; const rockets=[]; let running=true; let autoFireEnabled=true; let autoStarted=false;
+function launchRocket(tx,ty){ rockets.push({x:rand(80,fw.width-80),y:fw.height+20,tx,ty,vx:0,vy:-rand(8,12),age:0,ttl:80}); }
+function explode(x,y,color){ const cnt=100+Math.floor(Math.random()*160); for(let i=0;i<cnt;i++){ const a=rand(0,Math.PI*2); const s=rand(.8,6); particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:60+Math.floor(Math.random()*60),col:color||`hsl(${Math.floor(rand(0,360))} 100% 60%)`,size:1.2+Math.random()*3}) } }
 
-    // ===== Dynamic loader for Jitsi external_api.js =====
-    // Returns true if API is available (either previously present or loaded), false on failure/timeout
-    function loadJitsiApi(timeoutMs = 4000) {
-      return new Promise((resolve) => {
-        try {
-          if (typeof window.JitsiMeetExternalAPI !== 'undefined') return resolve(true);
-          // Don't attempt network loads when clearly sandboxed; resolve false quickly
-          if (isSandboxed()) return resolve(false);
+fw.addEventListener('click', e=>{ const x=e.clientX; const y=e.clientY; launchRocket(x,y); });
+function stepFW(){ if(!running) return; fctx.clearRect(0,0,fw.width,fw.height);
+  // rockets
+  for(let i=rockets.length-1;i>=0;i--){ const r=rockets[i]; r.x += (r.tx - r.x)/20; r.y += r.vy; r.vy += 0.15; r.age++; fctx.beginPath(); fctx.arc(r.x,r.y,2,0,Math.PI*2); fctx.fillStyle='white'; fctx.fill(); if(r.age>r.ttl || r.y<r.ty){ explode(r.x,r.y); rockets.splice(i,1); }}
+  // particles
+  for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.02; p.vx*=0.998; p.vy*=0.999; p.life--; fctx.beginPath(); fctx.globalCompositeOperation='lighter'; fctx.fillStyle=p.col; fctx.globalAlpha = Math.max(0,p.life/120); fctx.arc(p.x,p.y,p.size,0,Math.PI*2); fctx.fill(); if(p.life<=0 || p.y>fw.height+50) particles.splice(i,1); }
+  fctx.globalCompositeOperation='source-over'; requestAnimationFrame(stepFW);
+}
+stepFW();
 
-          const src = 'https://meet.jit.si/external_api.js';
-          const existing = Array.from(document.getElementsByTagName('script')).find(s => s.src === src);
-          if (existing) {
-            // If there's already a script tag, wait a bit for it to load/use
-            const checkInterval = setInterval(() => {
-              if (typeof window.JitsiMeetExternalAPI !== 'undefined') { clearInterval(checkInterval); resolve(true); }
-            }, 200);
-            setTimeout(() => { clearInterval(checkInterval); resolve(typeof window.JitsiMeetExternalAPI !== 'undefined'); }, timeoutMs);
-            return;
-          }
+// Big pre-programmed grand show
+function doGrandShow(){ // sequences of bursts
+  let t=0; const seq=[]; for(let i=0;i<18;i++){ seq.push(()=>{ for(let k=0;k<6;k++){ launchRocket(rand(100,fw.width-100), rand(60, fw.height*0.6)); } }); }
+  seq.forEach((fn,idx)=> setTimeout(fn, idx*700)); // long tail
+  // add confetti flags
+  const cf = setInterval(()=>{ for(let i=0;i<8;i++) spawnFalling(); },400); setTimeout(()=>clearInterval(cf), 15000);
+}
 
-          const s = document.createElement('script');
-          s.src = src;
-          s.async = true;
-          let settled = false;
-          s.onload = () => { settled = true; resolve(typeof window.JitsiMeetExternalAPI !== 'undefined'); };
-          s.onerror = () => { settled = true; resolve(false); };
-          document.head.appendChild(s);
-          setTimeout(() => { if (!settled) resolve(typeof window.JitsiMeetExternalAPI !== 'undefined'); }, timeoutMs);
-        } catch (e) { resolve(false); }
-      });
-    }
+// expose manual burst
+$('#burstNow').onclick = ()=>{ for(let i=0;i<8;i++) launchRocket(rand(120,fw.width-120), rand(60, fw.height*0.6)); }
 
-    // ===== Jitsi embedding and fallback logic =====
-    let api = null;
+// -------------------- Popup --------------------
+const popup = $('#popup'); $('#popupNow').onclick = ()=>{ popup.classList.add('show'); setTimeout(()=>popup.classList.remove('show'),4500);} 
+// Auto show popup on load
+setTimeout(()=>{ popup.classList.add('show'); setTimeout(()=>popup.classList.remove('show'),4500); },700);
 
-    function createJitsiInstance(roomName) {
-      try {
-        const domain = 'meet.jit.si';
-        const options = {
-          roomName,
-          parentNode: document.querySelector('#jitsi'),
-          width: '100%',
-          height: '100%',
-          userInfo: { displayName: (displayNameEl.value || '').trim() || undefined },
-          configOverwrite: {
-            resolution: 360,
-            constraints: { video: { height: { ideal: 360, max: 360, min: 180 } } },
-            disableSimulcast: false,
-            startWithAudioMuted: false,
-            startWithVideoMuted: false,
-            p2p: { enabled: true },
-            channelLastN: 12
-          },
-          interfaceConfigOverwrite: { TOOLBAR_BUTTONS: [ 'microphone','camera','desktop','tileview','chat','raisehand','participants-pane','mute-everyone','hangup' ] }
-        };
-        api = new JitsiMeetExternalAPI(domain, options);
-        btnLeave.classList.remove('hidden');
-        api.addListener('videoConferenceJoined', () => {
-          const name = (displayNameEl.value || '').trim();
-          if (name) try { api.executeCommand('displayName', name); } catch (e) {}
-        });
-        api.addListener('videoConferenceLeft', () => { btnLeave.classList.add('hidden'); });
-        return true;
-      } catch (e) {
-        console.error('createJitsiInstance error', e);
-        api = null;
-        return false;
-      }
-    }
+// -------------------- Audio --------------------
+let audio; try{ audio = new Audio(); audio.src = 'data:audio/mp3;base64,//uQxAA...'; /* placeholder short base64 clip can be filled by user */ }catch(e){audio=null}
+let musicOn=false; $('#musicToggle').onclick = ()=>{ if(!audio) { alert('Trình duyệt không hỗ trợ audio inlined. Bạn có thể thêm file MP3 vào mã.'); return; } musicOn = !musicOn; audio.loop = musicOn; if(musicOn) audio.play().catch(()=>{}); else audio.pause(); $('#musicToggle').textContent = 'Nhạc: ' + (musicOn? 'bật' : 'tắt'); }
 
-    async function joinRoom(){
-      const roomName = (roomInputEl.value || '').trim() || randomRoom();
-      roomInputEl.value = roomName;
-      setRoomToURL(roomName); // safe no-op in sandbox
+// -------------------- Toggles --------------------
+$('#flagsToggle').onclick = ()=>{ flagsEnabled = !flagsEnabled; $('#flagsToggle').textContent = 'Cờ rơi: ' + (flagsEnabled? 'Bật' : 'Tắt'); }
+let autoFireBtn = $('#autoToggle'); autoFireBtn.onclick = ()=>{ autoFireEnabled = !autoFireEnabled; autoFireBtn.textContent = 'Tự động pháo hoa: ' + (autoFireEnabled? 'Bật' : 'Tắt'); }
 
-      // dispose previous if exists
-      if (api) { try { api.dispose(); } catch(e){} api = null; }
+// -------------------- Share & Fullscreen --------------------
+$('#shareBtn').onclick = async ()=>{ const shareData = {title:document.title,text:'Chúc mừng Quốc khánh 2/9 — hãy xem trang mừng này!', url:location.href}; try{ await navigator.share(shareData);}catch(e){ prompt('Sao chép liên kết:', location.href);} }
+$('#fullBtn').onclick = ()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
 
-      apiStatus.textContent = '';
+// -------------------- Small polish: auto launch some rockets on idle --------------------
+let idle=0; setInterval(()=>{ idle++; if(idle>6 && Math.random()<0.6){ launchRocket(rand(120,fw.width-120), rand(80,fw.height*0.6)); idle=0;} },2500);
+window.addEventListener('pointerdown',()=>idle=0);
 
-      const hasApi = (typeof window.JitsiMeetExternalAPI !== 'undefined');
-      if (hasApi) {
-        const ok = createJitsiInstance(roomName);
-        if (ok) { apiStatus.textContent = 'Vào phòng (nhúng) — Jitsi API có sẵn.'; return; }
-        // if create failed, fallthrough to try dynamic loading or fallback
-      }
-
-      // Try to load dynamically (if allowed)
-      apiStatus.textContent = 'Đang cố nạp Jitsi API...';
-      const loaded = await loadJitsiApi(4000);
-      if (loaded && typeof window.JitsiMeetExternalAPI !== 'undefined') {
-        const ok = createJitsiInstance(roomName);
-        if (ok) { apiStatus.textContent = 'Vào phòng (nhúng) — Jitsi API đã nạp.'; return; }
-      }
-
-      // Fallback: open meet.jit.si in a new tab (safe for sandbox/preview)
-      apiStatus.textContent = 'Không nạp được Jitsi API — mở meet.jit.si (fallback).';
-      try {
-        window.open(buildInviteURL(roomName), '_blank');
-      } catch (e) {
-        // Nếu window.open bị chặn, hiển thị link để user bấm
-        apiStatus.textContent = 'Không thể mở tab tự động. Link mời: ' + buildInviteURL(roomName);
-        console.warn('Fallback open failed:', e);
-      }
-    }
-
-    function leaveRoom(){
-      if (api) {
-        try { api.executeCommand('hangup'); } catch(e){}
-        try { api.dispose(); } catch(e){}
-        api = null;
-      }
-      btnLeave.classList.add('hidden');
-    }
-
-    async function copyInvite(){
-      const room = (roomInputEl.value || '').trim() || getRoomFromURL() || randomRoom();
-      roomInputEl.value = room;
-      const invite = buildInviteURL(room);
-      const ok = await safeCopy(`Vào cuộc gọi: ${invite}`);
-      btnCopyLink.textContent = ok ? 'Đã copy ✅' : 'Copy thất bại';
-      setTimeout(()=> btnCopyLink.textContent = 'Copy link mời', 1200);
-    }
-
-    // ===== Self-tests (mở rộng) =====
-    function appendTest(msg, ok){
-      const el = document.createElement('div');
-      el.className = ok ? 'log-pass' : 'log-fail';
-      el.textContent = (ok ? '✅ ' : '❌ ') + msg;
-      if (testlog) testlog.appendChild(el);
-      try { console[ok ? 'log' : 'error']((ok ? 'PASS: ' : 'FAIL: ') + msg); } catch {}
-    }
-
-    async function runSelfTests(){
-      // Test A: setRoomToURL không ném lỗi trong sandbox
-      let threw = false; try { setRoomToURL('room-test'); } catch(e){ threw = true; }
-      appendTest('setRoomToURL an toàn (không ném lỗi)', !threw);
-
-      // Test B: buildInviteURL trả về meet.jit.si khi sandbox
-      const invite = buildInviteURL('room-abc-123');
-      appendTest('buildInviteURL trả về meet.jit.si khi sandbox/preview', invite.indexOf('https://meet.jit.si/') === 0);
-
-      // Test C: randomRoom định dạng
-      const r = randomRoom(); appendTest('randomRoom định dạng bắt đầu bằng "room-"', /^room-[a-z0-9]{6,}$/.test(r));
-
-      // Test D: loadJitsiApi không ném và trả về boolean
-      try {
-        const res = await loadJitsiApi(1000); // ngắn để test nhanh — trong sandbox thường false
-        appendTest('loadJitsiApi trả về boolean (ok=' + !!res + ')', typeof res === 'boolean');
-      } catch(e) { appendTest('loadJitsiApi ném lỗi: ' + e.message, false); }
-
-      // Test E: joinRoom fallback khi API không tồn tại — stub window.open to capture
-      try {
-        const prevOpen = window.open;
-        let opened = false; let openedUrl = null;
-        window.open = function(url, target){ opened = true; openedUrl = url; return { url, target }; };
-        try { await (async ()=>{ await joinRoom(); })(); } catch(e) { /* ignore */ }
-        appendTest('joinRoom fallback gọi window.open khi API không có (opened=' + !!opened + ')', opened === true);
-        appendTest('URL mở ra hợp lệ', typeof openedUrl === 'string' && openedUrl.indexOf('https://') === 0);
-        window.open = prevOpen;
-      } catch(e) { appendTest('joinRoom fallback kiểm thử lỗi: ' + e.message, false); }
-
-      // Test F: giả lập Jitsi API tồn tại và kiểm tra createJitsiInstance không ném
-      try {
-        // Lưu API thật (nếu có)
-        const realAPI = window.JitsiMeetExternalAPI;
-        // Tạo stub constructor
-        function StubAPI(domain, opts){
-          this._domain = domain; this._opts = opts;
-          this.dispose = function(){};
-          this.executeCommand = function(){};
-          this.addListener = function(){};
-        }
-        window.JitsiMeetExternalAPI = StubAPI;
-        // đảm bảo DOM #jitsi rỗng
-        const j = document.querySelector('#jitsi'); if (j) j.innerHTML = '';
-        const prevOpen = window.open; // tránh fallback mở tab
-        window.open = function(){};
-        let created = false;
-        try { await (async ()=>{ await joinRoom(); created = !!api; })(); } catch(e){ created = false; }
-        appendTest('joinRoom khi có Jitsi API (stub) nên tạo được instance', created === true);
-        // cleanup
-        leaveRoom();
-        window.JitsiMeetExternalAPI = realAPI;
-        window.open = prevOpen;
-      } catch(e) { appendTest('joinRoom với stub Jitsi API gặp lỗi: ' + e.message, false); }
-
-      appendTest('Self-tests hoàn tất', true);
-    }
-
-    // ===== Bind events =====
-    btnNewRoom.addEventListener('click', () => { const r = randomRoom(); roomInputEl.value = r; setRoomToURL(r); });
-    btnJoin.addEventListener('click', async () => { apiStatus.textContent = 'Khởi tạo...'; const ok = await loadJitsiApi(5000); if (!ok) apiStatus.textContent = 'Không nạp được Jitsi API — sẽ dùng fallback.'; await joinRoom(); });
-    btnLeave.addEventListener('click', leaveRoom);
-    btnCopyLink.addEventListener('click', copyInvite);
-
-    // Auto-fill room input but DO NOT auto-join (avoids popup & blocked loads in preview)
-    const initialRoom = getRoomFromURL(); if (initialRoom) roomInputEl.value = initialRoom;
-
-    // Kích hoạt tự kiểm thử sau khi trang sẵn sàng
-    window.addEventListener('load', () => { setTimeout(() => { runSelfTests(); }, 300); });
-  </script>
+// -------------------- Fin --------------------
+// Note: For legal reasons we did not include a full-length copyrighted music file. Replace data URL with your mp3 link or paste a small base64 clip.
+</script>
 </body>
 </html>
