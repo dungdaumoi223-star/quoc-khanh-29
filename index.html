@@ -1,218 +1,1036 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>🎇 Quốc khánh 2/9 — Hoành tráng</title>
-  <meta name="description" content="Trang chúc mừng Quốc khánh 2/9: nhạc nền, pháo hoa nâng cấp, cờ rơi, banner động, máy bay bay qua, popup lời chúc - tất cả trong 1 file HTML." />
-  <style>
-    :root{--bg1:#070617;--bg2:#160018;--gold:#ffe000;--red:#da1212}
-    *{box-sizing:border-box}
-    html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,system-ui,-apple-system,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#fff;overflow:hidden}
-    .wrap{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:18px;padding:20px}
-    header{display:flex;gap:12px;align-items:center;width:100%;max-width:1200px}
-    .logo{display:flex;align-items:center;gap:10px}
-    .logo .flag-sm{width:48px;height:30px;background:var(--red);border-radius:4px;position:relative;box-shadow:0 6px 18px #0008}
-    .logo .flag-sm::after{content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;background:var(--gold);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
-    h1{font-size:clamp(26px,4vw,44px);margin:0;font-weight:800;letter-spacing:0.8px;text-transform:uppercase}
-    .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
-    .btn{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));padding:9px 12px;border-radius:12px;border:1px solid #ffffff22;color:#fff;cursor:pointer;font-weight:700}
+<meta charset="UTF-8">
+<title>Game Tài Xỉu Ảo Auto Liên Tục</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
-    /* Hero */
-    .hero{width:100%;max-width:1200px;display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
-    @media (max-width:980px){.hero{grid-template-columns:1fr}}
-    .left{position:relative;padding:18px;border-radius:18px;overflow:hidden;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));box-shadow:0 20px 60px #000a}
-    .right{padding:18px;border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,0.03),transparent)}
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #1b1b1b, #2c2c2c);
+  color: #ffffff;
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+}
 
-    /* Banner */
-    .banner{font-weight:900;font-size:28px;padding:14px;border-radius:14px;background:linear-gradient(90deg,#ff5959,#ffb86b);color:#1d0a00;display:flex;align-items:center;gap:12px;overflow:hidden}
-    .banner .marquee{white-space:nowrap;display:inline-block;animation:marq 14s linear infinite}
-    @keyframes marq{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+h1 {
+  margin-bottom: 10px;
+  font-size: 28px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(255, 255, 255, 0.3);
+}
 
-    /* Flag + star */
-    .flag-big{width:100%;height:380px;background:linear-gradient(180deg,var(--red),#b30b0b);border-radius:14px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
-    .flag-big::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle at 20% 20%, rgba(255,255,255,.03), transparent 30%);} 
-    .star{width:160px;height:160px;background:var(--gold);filter:drop-shadow(0 12px 28px #0008);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);transform:scale(1);animation:starpop 2.4s ease-in-out infinite}
-    @keyframes starpop{0%{transform:scale(.98) rotate(-2deg)}50%{transform:scale(1.06) rotate(2deg)}100%{transform:scale(.98) rotate(-2deg)}}
+.balance {
+  margin-bottom: 5px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #00ff88;
+  text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+}
 
-    /* Count boxes */
-    .countwrap{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
-    .pill{background:rgba(0,0,0,0.35);padding:12px 16px;border-radius:12px;min-width:90px;text-align:center}
-    .pill .n{font-size:28px;font-weight:900}
-    .pill .l{font-size:12px;opacity:.9;margin-top:4px}
+.current-bet {
+  margin-bottom: 5px;
+  font-size: 16px;
+  color: #ffd700;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
 
-    /* small panel */
-    .panel{display:flex;flex-direction:column;gap:12px}
-    .panel .card{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));padding:12px;border-radius:12px}
+#betConfirm {
+  margin-bottom: 10px;
+  color: #00ff88;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(0, 255, 136, 0.7);
+}
 
-    /* floating elements */
-    .sky-canvas{position:absolute;inset:0;pointer-events:none}
-    .floaters{position:absolute;inset:0;pointer-events:none}
+.game-container {
+  position: relative;
+  width: 500px;
+  height: 350px;
+  border: 2px solid #555;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #333, #222) url('images/table.png') no-repeat center/contain;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  background-blend-mode: overlay;
+}
 
-    /* popup */
-    .popup{position:fixed;left:50%;top:12%;transform:translateX(-50%) scale(.9);padding:18px 22px;background:linear-gradient(180deg,#fff1 0,#fff0 60%);border-radius:18px;border:1px solid #ffffff22;color:#fff;font-weight:800;backdrop-filter:blur(6px);box-shadow:0 30px 80px #000a;opacity:0;pointer-events:none}
-    .popup.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto;animation:pop .7s cubic-bezier(.2,.9,.2,1)}
-    @keyframes pop{0%{transform:translateX(-50%) scale(.6) translateY(-10px)}60%{transform:translateX(-50%) scale(1.05)}100%{transform:translateX(-50%) scale(1)}}
+.round-display {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffcc00;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 5px 10px;
+  border-radius: 5px;
+  z-index: 5;
+  text-shadow: 0 0 5px rgba(255, 204, 0, 0.5);
+}
 
-    /* falling flags/emojis */
-    .falling-item{position:fixed;will-change:transform;pointer-events:none}
+.dice-layer {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  width: 140px;
+  height: 120px;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
 
-    footer{position:fixed;left:12px;bottom:12px;font-size:13px;opacity:.85}
+.dice-layer img {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7)) brightness(1.1);
+}
 
-    /* responsive tweaks */
-    @media (max-width:640px){.flag-big{height:220px}.star{width:110px;height:110px}}
-  </style>
+.dice-layer img:nth-child(1) { top: 0; left: 50%; transform: translateX(-50%); }
+.dice-layer img:nth-child(2) { bottom: 0; left: 0; }
+.dice-layer img:nth-child(3) { bottom: 0; right: 0; }
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 5;
+  animation: particleFade 1s ease-out forwards;
+}
+
+@keyframes particleFade {
+  0% { opacity: 0.8; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.5) translateY(-50px); }
+}
+
+.result-label {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.4);
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  animation: glow 1.5s infinite alternate;
+}
+
+@keyframes glow {
+  0% { text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.4); }
+  100% { text-shadow: 0 0 15px rgba(255, 215, 0, 1), 0 0 30px rgba(255, 215, 0, 0.6); }
+}
+
+.bowl-layer {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  width: 280px;
+  height: 170px;
+  background: url('images/bowl.png') no-repeat center/contain;
+  transform: translateX(-50%);
+  cursor: grab;
+  z-index: 6;
+  transition: top 0.2s, left 0.2s, filter 0.3s;
+  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.4));
+}
+
+.bowl-layer.active {
+  filter: drop-shadow(0 0 15px rgba(0, 255, 136, 0.7)) brightness(1.1);
+}
+
+@keyframes shakeBowl {
+  0% { transform: translateX(-50%) rotate(0deg); }
+  25% { transform: translateX(-50%) rotate(2deg); }
+  50% { transform: translateX(-50%) rotate(-2deg); }
+  75% { transform: translateX(-50%) rotate(2deg); }
+  100% { transform: translateX(-50%) rotate(0deg); }
+}
+
+.bowl-layer.shake {
+  animation: shakeBowl 0.1s infinite;
+}
+
+.bet-options {
+  position: absolute;
+  top: 45%;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 60px;
+  box-sizing: border-box;
+  z-index: 5;
+}
+
+.bet-options button {
+  padding: 12px 24px;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(45deg, #ff4444, #ff7777);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.bet-options button:hover {
+  background: linear-gradient(45deg, #ff7777, #ff9999);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+}
+
+.bet-options button#betXiu {
+  background: linear-gradient(45deg, #4444ff, #7777ff);
+}
+
+.bet-options button#betXiu:hover {
+  background: linear-gradient(45deg, #7777ff, #9999ff);
+  box-shadow: 0 0 15px rgba(68, 68, 255, 0.5);
+}
+
+.reset-bet {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(45deg, #ffaa00, #ffcc33);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
+
+.reset-bet:hover {
+  background: linear-gradient(45deg, #ffcc33, #ffdd66);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.5);
+}
+
+.quick-bet {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 5;
+}
+
+.quick-bet .quick-btn {
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(45deg, #444, #666);
+  color: #fff;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.quick-bet .quick-btn:hover {
+  background: linear-gradient(45deg, #666, #888);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+#rechargeContainer {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  text-align: right;
+}
+
+#showRecharge {
+  padding: 8px 15px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(45deg, #00cc66, #00ff88);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+#showRecharge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+}
+
+#rechargeQuick {
+  display: none;
+  margin-top: 10px;
+}
+
+.recharge-btn {
+  padding: 8px 15px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(45deg, #00cc66, #00ff88);
+  color: #fff;
+  margin-right: 5px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.recharge-btn:hover {
+  background: linear-gradient(45deg, #00ff88, #33ffaa);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+}
+
+#toggleMusic {
+  position: absolute;
+  top: 100px;
+  right: 20px;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(45deg, #00ccff, #0099ff);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 10;
+}
+
+#toggleMusic:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 204, 255, 0.5);
+}
+
+#toggleMusic.disabled {
+  background: linear-gradient(45deg, #666, #888);
+  cursor: not-allowed;
+}
+
+#downloadHistory {
+  position: absolute;
+  top: 140px;
+  right: 20px;
+  padding: 8px 15px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(45deg, #ff4444, #ff7777);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  z-index: 10;
+}
+
+#downloadHistory:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+}
+
+.countdown {
+  position: absolute;
+  top: 210px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 48px;
+  font-weight: 700;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.7), 0 0 20px rgba(255, 215, 0, 0.4);
+  z-index: 7;
+}
+
+@keyframes jumpDice {
+  0% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-30px) scale(1.05); }
+  40% { transform: translateY(-50px) scale(1.1); }
+  60% { transform: translateY(-20px) scale(1.05); }
+  80% { transform: translateY(0) scale(1.02); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.jump {
+  animation: jumpDice 0.8s cubic-bezier(0.36, 0.66, 0.04, 1);
+}
+
+@keyframes bowlJump-left {
+  0% { top: 30px; left: 50%; transform: translateX(-50%) rotate(0deg) scale(1); }
+  20% { top: 15px; left: 47%; transform: translateX(-50%) rotate(5deg) scale(1.05); }
+  40% { top: 10px; left: 45%; transform: translateX(-50%) rotate(8deg) scale(1.08); }
+  60% { top: 50px; left: 55%; transform: translateX(-50%) rotate(-8deg) scale(1.05); }
+  80% { top: 25px; left: 52%; transform: translateX(-50%) rotate(3deg) scale(1.02); }
+  100% { top: 30px; left: 50%; transform: translateX(-50%) rotate(0deg) scale(1); }
+}
+
+@keyframes bowlJump-right {
+  0% { top: 30px; left: 50%; transform: translateX(-50%) rotate(0deg) scale(1); }
+  20% { top: 15px; left: 53%; transform: translateX(-50%) rotate(5deg) scale(1.05); }
+  40% { top: 10px; left: 55%; transform: translateX(-50%) rotate(8deg) scale(1.08); }
+  60% { top: 50px; left: 45%; transform: translateX(-50%) rotate(-8deg) scale(1.05); }
+  80% { top: 25px; left: 48%; transform: translateX(-50%) rotate(3deg) scale(1.02); }
+  100% { top: 30px; left: 50%; transform: translateX(-50%) rotate(0deg) scale(1); }
+}
+
+@keyframes bowlJump-up {
+  0% { top: 30px; transform: translateX(-50%) rotate(0deg) scale(1); }
+  20% { top: 10px; transform: translateX(-50%) rotate(2deg) scale(1.05); }
+  40% { top: 0px; transform: translateX(-50%) rotate(4deg) scale(1.08); }
+  60% { top: 60px; transform: translateX(-50%) rotate(-4deg) scale(1.05); }
+  80% { top: 20px; transform: translateX(-50%) rotate(2deg) scale(1.02); }
+  100% { top: 30px; transform: translateX(-50%) rotate(0deg) scale(1); }
+}
+
+.bowl-jump-left {
+  animation: bowlJump-left 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.bowl-jump-right {
+  animation: bowlJump-right 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.bowl-jump-up {
+  animation: bowlJump-up 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.history-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 5;
+}
+
+.history-dots .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff4444;
+  box-shadow: 0 0 5px rgba(255, 68, 68, 0.7), 0 0 10px rgba(255, 68, 68, 0.4);
+}
+
+.history-dots .dot.xiu {
+  background: #4444ff;
+  box-shadow: 0 0 5px rgba(68, 68, 255, 0.7), 0 0 10px rgba(68, 68, 255, 0.4);
+}
+
+.history-detail {
+  position: absolute;
+  top: 40px;
+  left: 10px;
+  font-size: 12px;
+  display: none;
+  flex-direction: column;
+  max-height: 150px;
+  width: 120px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 5px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  z-index: 5;
+}
+
+.history-detail span {
+  margin-bottom: 3px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  color: #fff;
+}
+
+#toggleHistory {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 5px;
+  border: none;
+  background: linear-gradient(45deg, #444, #666);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+}
+
+#toggleHistory:hover {
+  background: linear-gradient(45deg, #666, #888);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 600px) {
+  .game-container {
+    width: 90%;
+    height: 300px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+
+  .bowl-layer {
+    width: 240px;
+    height: 140px;
+    top: 20px;
+  }
+
+  .dice-layer {
+    width: 120px;
+    height: 100px;
+    top: 50px;
+  }
+
+  .dice-layer img {
+    width: 50px;
+    height: 50px;
+  }
+
+  .result-label {
+    font-size: 20px;
+    top: 15px;
+  }
+
+  .bet-options {
+    top: 40%;
+    padding: 0 40px;
+  }
+
+  .bet-options button {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  .quick-bet {
+    bottom: 30px;
+  }
+
+  .quick-bet .quick-btn, .recharge-btn, .reset-bet, #toggleMusic, #downloadHistory {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .round-display {
+    font-size: 14px;
+    padding: 4px 8px;
+  }
+
+  .countdown {
+    font-size: 36px;
+    top: 180px;
+  }
+
+  .history-detail {
+    width: 100px;
+    top: 40px;
+  }
+
+  #toggleHistory {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  @keyframes jumpDice {
+    0% { transform: translateY(0) scale(1); }
+    20% { transform: translateY(-25px) scale(1.05); }
+    40% { transform: translateY(-40px) scale(1.1); }
+    60% { transform: translateY(-15px) scale(1.05); }
+    80% { transform: translateY(0) scale(1.02); }
+    100% { transform: translateY(0) scale(1); }
+  }
+
+  .jump {
+    animation: jumpDice 0.8s cubic-bezier(0.36, 0.66, 0.04, 1);
+  }
+
+  @keyframes bowlJump-left {
+    0% { top: 20px; left: 50%; transform: translateX(-50%) rotate(0deg) scale(1); }
+    20% { top: 10px; left: 47%; transform: translateX(-50%) rotate(5deg) scale(1.05); }
+    40% { top: 0px; left: 45%; transform: translateX(-50%) rotate(8deg) scale(1.08); }
+    60% { top: 40px; left: 55%; transform: translateX(-50%) rotate(-8deg) scale(1.05); }
+    80% { top: 15px; left: 52%; transform: translateX(-50%) rotate(3deg) scale(1.02); }
+    100% { top: 20px; left: 50%; transform: translateX(-50%) rotate(0deg) scale(1); }
+  }
+
+  @keyframes bowlJump-right {
+    0% { top: 20px; left: 50%; transform: translateX(-50%) rotate(0deg) scale(1); }
+    20% { top: 10px; left: 53%; transform: translateX(-50%) rotate(5deg) scale(1.05); }
+    40% { top: 0px; left: 55%; transform: translateX(-50%) rotate(8deg) scale(1.08); }
+    60% { top: 40px; left: 45%; transform: translateX(-50%) rotate(-8deg) scale(1.05); }
+    80% { top: 15px; left: 48%; transform: translateX(-50%) rotate(3deg) scale(1.02); }
+    100% { top: 20px; left: 50%; transform: translateX(-50%) rotate(0deg) scale(1); }
+  }
+
+  @keyframes bowlJump-up {
+    0% { top: 20px; transform: translateX(-50%) rotate(0deg) scale(1); }
+    20% { top: 0px; transform: translateX(-50%) rotate(2deg) scale(1.05); }
+    40% { top: -10px; transform: translateX(-50%) rotate(4deg) scale(1.08); }
+    60% { top: 50px; transform: translateX(-50%) rotate(-4deg) scale(1.05); }
+    80% { top: 10px; transform: translateX(-50%) rotate(2deg) scale(1.02); }
+    100% { top: 20px; transform: translateX(-50%) rotate(0deg) scale(1); }
+  }
+
+  .bowl-jump-left {
+    animation: bowlJump-left 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .bowl-jump-right {
+    animation: bowlJump-right 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .bowl-jump-up {
+    animation: bowlJump-up 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+</style>
 </head>
 <body>
-  <!-- canvases for stars/planes/fireworks/confetti -->
-  <canvas id="sky" class="sky-canvas"></canvas>
-  <canvas id="fw" class="sky-canvas"></canvas>
-  <div class="wrap">
-    <header>
-      <div class="logo"><div class="flag-sm"></div><h1>Quốc khánh 2/9</h1></div>
-      <div class="controls">
-        <button class="btn" id="musicToggle">Nhạc: tắt</button>
-        <button class="btn" id="autoToggle">Tự động pháo hoa: Bật</button>
-        <button class="btn" id="flagsToggle">Cờ rơi: Bật</button>
-        <button class="btn" id="shareBtn">Chia sẻ</button>
-        <button class="btn" id="fullBtn">Toàn màn hình</button>
-      </div>
-    </header>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="text/javascript">
+var gk_isXlsx = true;
+var gk_xlsxFileLookup = {};
+var gk_fileData = {};
+function filledCell(cell) {
+  return cell !== '' && cell != null;
+}
+function loadFileData(filename) {
+  if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+    try {
+      var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+      var firstSheetName = workbook.SheetNames[0];
+      var worksheet = workbook.Sheets[firstSheetName];
+      var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+      var filteredData = jsonData.filter(row => row.some(filledCell));
+      var headerRowIndex = filteredData.findIndex((row, index) =>
+        row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+      );
+      if (headerRowIndex === -1 || headerRowIndex > 25) {
+        headerRowIndex = 0;
+      }
+      var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+      csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+      return csv;
+    } catch (e) {
+      console.error(e);
+      return "";
+    }
+  }
+  return gk_fileData[filename] || "";
+}
+</script>
 
-    <div class="hero">
-      <div class="left">
-        <div class="banner"><div class="marquee">Việt Nam muôn năm! • Quốc khánh 2/9 • Độc lập - Tự do - Hạnh phúc • Việt Nam thắng lợi!</div></div>
+<h1>Game Tài Xỉu Ảo</h1>
+<div class="balance" id="balanceDisplay">Balance: 1.000 ₫</div>
+<div class="current-bet" id="currentBetDisplay">Tổng cược hiện tại: 0 ₫</div>
+<div id="betConfirm"></div>
 
-        <div class="flag-big" id="flagBig">
-          <div class="star" id="star"></div>
-          <div class="floaters" id="floaters"></div>
-        </div>
-
-        <div class="countwrap" style="justify-content:center">
-          <div class="pill"><div class="n" id="D">--</div><div class="l">NGÀY</div></div>
-          <div class="pill"><div class="n" id="H">--</div><div class="l">GIỜ</div></div>
-          <div class="pill"><div class="n" id="M">--</div><div class="l">PHÚT</div></div>
-          <div class="pill"><div class="n" id="S">--</div><div class="l">GIÂY</div></div>
-        </div>
-      </div>
-
-      <aside class="right panel">
-        <div class="card">
-          <strong>Hiệu ứng</strong>
-          <p style="margin:8px 0 0 0">- Nhấn bất kỳ chỗ trống để bắn pháo hoa. <br>- Pháo hoa tự bật khi đếm về 0. <br>- Tắt/mở âm nhạc bằng nút "Nhạc".</p>
-        </div>
-        <div class="card">
-          <strong>Lưu & chia sẻ</strong>
-          <p style="margin:8px 0">Bạn có thể chụp màn hình hoặc dùng nút <em>Chia sẻ</em> để gửi link.</p>
-        </div>
-        <div class="card">
-          <strong>Tùy chỉnh nhanh</strong>
-          <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="burstNow">Bắn ngay</button><button class="btn" id="popupNow">Lời chúc</button></div>
-        </div>
-      </aside>
-    </div>
-
-    <div id="popup" class="popup">Chúc mừng Quốc khánh 2/9 — Việt Nam muôn năm! 🇻🇳</div>
-
-    <footer>Made with ❤️ • Nhấp để bắn pháo hoa • Tùy chỉnh thoải mái</footer>
+<div id="rechargeContainer">
+  <button id="showRecharge">Nạp tiền</button>
+  <div id="rechargeQuick">
+    <button class="recharge-btn" data-amount="1000000">1m</button>
+    <button class="recharge-btn" data-amount="5000000">5m</button>
+    <button class="recharge-btn" data-amount="100000000">100m</button>
   </div>
+</div>
+
+<div class="game-container" id="gameContainer">
+  <div class="dice-layer" id="diceLayer">
+    <img src="images/dice1.png" alt="Dice 1">
+    <img src="images/dice2.png" alt="Dice 2">
+    <img src="images/dice3.png" alt="Dice 3">
+  </div>
+  <div class="result-label" id="resultLabel"></div>
+  <div class="bowl-layer" id="bowlLayer"></div>
+  <div class="bet-options">
+    <button id="betTai">Tài</button>
+    <button id="betXiu">Xỉu</button>
+  </div>
+  <div class="countdown" id="countdownDisplay"></div>
+  <div class="quick-bet">
+    <button class="quick-btn" data-amount="1000">1k</button>
+    <button class="quick-btn" data-amount="10000">10k</button>
+    <button class="quick-btn" data-amount="100000">100k</button>
+    <button class="quick-btn" data-amount="500000">500k</button>
+    <button class="quick-btn" data-amount="1000000">1m</button>
+    <button class="quick-btn" data-amount="5000000">5m</button>
+    <button class="quick-btn" data-amount="all">All-in</button>
+  </div>
+  <button class="reset-bet" id="resetBet">Reset Cược</button>
+  <div class="round-display" id="roundDisplay">Vòng: 0</div>
+  <div class="history-dots" id="historyDots"></div>
+  <button id="toggleHistory">Lịch sử</button>
+  <div class="history-detail" id="historyDetail"><div style="font-weight:bold;margin-bottom:3px;">Lịch sử chi tiết</div></div>
+</div>
+
+<audio id="bgMusic" loop>
+  <source src="sounds/background.mp3" type="audio/mpeg">
+  <source src="sounds/background.ogg" type="audio/ogg">
+  Your browser does not support the audio element.
+</audio>
+<audio id="diceSound">
+  <source src="sounds/dice.mp3" type="audio/mpeg">
+  <source src="sounds/dice.ogg" type="audio/ogg">
+  Your browser does not support the audio element.
+</audio>
+<button id="toggleMusic">🎵 Nhạc: Tắt</button>
+<button id="downloadHistory">📥 Tải lịch sử</button>
 
 <script>
-// -------------------- Utilities --------------------
-const $ = sel => document.querySelector(sel);
-const rand = (a,b)=> Math.random()*(b-a)+a;
+let balance=1000000, bet=null, betAmount=0;
+let currentRound=0, phase='bet', countdown=30, countdownInterval;
+let bowlOpened=false, finalDice=[], result='';
+let historyData=[["Round","Dice","Result","Bet","Bet Amount","Balance"]];
+let balanceDisplay=document.getElementById('balanceDisplay'),
+    currentBetDisplay=document.getElementById('currentBetDisplay'),
+    countdownDisplay=document.getElementById('countdownDisplay'),
+    roundDisplay=document.getElementById('roundDisplay'),
+    betConfirm=document.getElementById('betConfirm'),
+    historyDotsContainer=document.getElementById('historyDots'),
+    historyDetailContainer=document.getElementById('historyDetail'),
+    toggleHistory=document.getElementById('toggleHistory'),
+    bowl=document.getElementById('bowlLayer'),
+    diceLayer=document.getElementById('diceLayer'),
+    resultLabel=document.getElementById('resultLabel'),
+    gameContainer=document.getElementById('gameContainer'),
+    music=document.getElementById('bgMusic'),
+    diceSound=document.getElementById('diceSound'),
+    toggleBtn=document.getElementById('toggleMusic'),
+    downloadHistoryBtn=document.getElementById('downloadHistory');
+let playing=false;
 
-// -------------------- Countdown --------------------
-const now = new Date();
-const thisYear = now.getFullYear();
-let target = new Date(thisYear,8,2,0,0,0);
-if(now>target) target = new Date(thisYear+1,8,2,0,0,0);
-function updCountdown(){
-  const s=Math.max(0, Math.floor((target - new Date())/1000));
-  const d = Math.floor(s/86400); const h = Math.floor((s%86400)/3600); const m = Math.floor((s%3600)/60); const sec = s%60;
-  $('#D').textContent=d; $('#H').textContent=String(h).padStart(2,'0'); $('#M').textContent=String(m).padStart(2,'0'); $('#S').textContent=String(sec).padStart(2,'0');
-  if(s===0 && autoFireEnabled && !autoStarted){autoStarted=true; doGrandShow();}
-}
-setInterval(updCountdown,1000); updCountdown();
+function formatVND(a){return a.toLocaleString('vi-VN',{style:'currency',currency:'VND',minimumFractionDigits:0});}
+function updateBalance(){balanceDisplay.textContent=`Balance: ${formatVND(balance)}`;}
+function updateCurrentBet(){currentBetDisplay.textContent=`Tổng cược hiện tại: ${formatVND(betAmount)}`;}
+function updateRoundDisplay(){roundDisplay.textContent=`Vòng: ${currentRound}`;}
 
-// -------------------- Background stars & plane --------------------
-const sky = document.getElementById('sky'); const sctx=sky.getContext('2d');
-function resize(){sky.width=innerWidth; sky.height=innerHeight; fw.width=innerWidth; fw.height=innerHeight;}
-window.addEventListener('resize',resize); const fw = document.getElementById('fw'); const fctx = fw.getContext('2d'); resize();
-
-const stars = Array.from({length:160}).map(()=>({x:rand(0,sky.width),y:rand(0,sky.height/2),r:rand(.3,1.6),alpha:rand(.3,1)}));
-let planeX = -200; function drawSky(){ sctx.clearRect(0,0,sky.width,sky.height);
-  // gradient
-  const g = sctx.createLinearGradient(0,0,0,sky.height); g.addColorStop(0,'#0b0b1a'); g.addColorStop(1,'#2b002b'); sctx.fillStyle=g; sctx.fillRect(0,0,sky.width,sky.height);
-  // stars
-  for(const st of stars){ sctx.beginPath(); sctx.globalAlpha=st.alpha; sctx.fillStyle='white'; sctx.arc(st.x,st.y,st.r,0,Math.PI*2); sctx.fill(); }
-  sctx.globalAlpha=1;
-  // plane / dove silhouette
-  planeX += 1.4; if(planeX>sky.width+200) planeX=-200;
-  sctx.save(); sctx.translate(planeX, 80 + Math.sin(Date.now()/1000)*12); sctx.fillStyle='rgba(255,255,255,0.09)'; sctx.beginPath(); sctx.moveTo(-60,0); sctx.quadraticCurveTo(0,-18,60,0); sctx.quadraticCurveTo(10,8,-60,0); sctx.fill(); sctx.restore();
-  requestAnimationFrame(drawSky);
-}
-drawSky();
-
-// -------------------- Falling flags/emojis --------------------
-let flagsEnabled = true; const fallPool=[]; const EMO=['🇻🇳','🎉','🎊','✨','🎆','❤️'];
-function spawnFalling(){ if(!flagsEnabled) return; const el = document.createElement('div'); el.className='falling-item'; el.style.left = Math.random()*100+'vw'; el.style.top='-6vh'; el.style.fontSize = (12+Math.random()*28)+'px'; el.style.transform = `translateY(-10vh)`; el.style.opacity=1; el.textContent = Math.random()<0.6? '🇻🇳' : EMO[Math.floor(Math.random()*EMO.length)]; document.body.appendChild(el);
-  const dur = 6000 + Math.random()*7000; el.animate([{transform:'translateY(0vh) rotate(0deg)'},{transform:`translateY(${120+Math.random()*60}vh) rotate(${Math.random()*720-360}deg)`}],{duration:dur,iterations:1,easing:'linear'}).onfinish=()=>el.remove();}
-setInterval(spawnFalling, 450);
-
-// -------------------- Floaters on flag --------------------
-const floaters = document.getElementById('floaters'); function addFloater(){ const d=document.createElement('div'); d.style.position='absolute'; d.style.left=rand(4,86)+'%'; d.style.bottom='-6%'; d.style.fontSize=rand(16,28)+'px'; d.style.opacity=.95; d.textContent = EMO[Math.floor(Math.random()*EMO.length)]; floaters.appendChild(d); d.animate([{transform:'translateY(0)'},{transform:'translateY(-120px)'}],{duration:4000+Math.random()*3000}).onfinish=()=>d.remove(); }
-setInterval(()=>{ if(Math.random()<.6) addFloater(); },800);
-
-// -------------------- Fireworks (upgraded) --------------------
-const particles=[]; const rockets=[]; let running=true; let autoFireEnabled=true; let autoStarted=false;
-function launchRocket(tx,ty){ rockets.push({x:rand(80,fw.width-80),y:fw.height+20,tx,ty,vx:0,vy:-rand(8,12),age:0,ttl:80}); }
-function explode(x,y,color){ const cnt=100+Math.floor(Math.random()*160); for(let i=0;i<cnt;i++){ const a=rand(0,Math.PI*2); const s=rand(.8,6); particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:60+Math.floor(Math.random()*60),col:color||`hsl(${Math.floor(rand(0,360))} 100% 60%)`,size:1.2+Math.random()*3}) } }
-
-fw.addEventListener('click', e=>{ const x=e.clientX; const y=e.clientY; launchRocket(x,y); });
-function stepFW(){ if(!running) return; fctx.clearRect(0,0,fw.width,fw.height);
-  // rockets
-  for(let i=rockets.length-1;i>=0;i--){ const r=rockets[i]; r.x += (r.tx - r.x)/20; r.y += r.vy; r.vy += 0.15; r.age++; fctx.beginPath(); fctx.arc(r.x,r.y,2,0,Math.PI*2); fctx.fillStyle='white'; fctx.fill(); if(r.age>r.ttl || r.y<r.ty){ explode(r.x,r.y); rockets.splice(i,1); }}
-  // particles
-  for(let i=particles.length-1;i>=0;i--){ const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.02; p.vx*=0.998; p.vy*=0.999; p.life--; fctx.beginPath(); fctx.globalCompositeOperation='lighter'; fctx.fillStyle=p.col; fctx.globalAlpha = Math.max(0,p.life/120); fctx.arc(p.x,p.y,p.size,0,Math.PI*2); fctx.fill(); if(p.life<=0 || p.y>fw.height+50) particles.splice(i,1); }
-  fctx.globalCompositeOperation='source-over'; requestAnimationFrame(stepFW);
-}
-stepFW();
-
-// Big pre-programmed grand show
-function doGrandShow(){ // sequences of bursts
-  let t=0; const seq=[]; for(let i=0;i<18;i++){ seq.push(()=>{ for(let k=0;k<6;k++){ launchRocket(rand(100,fw.width-100), rand(60, fw.height*0.6)); } }); }
-  seq.forEach((fn,idx)=> setTimeout(fn, idx*700)); // long tail
-  // add confetti flags
-  const cf = setInterval(()=>{ for(let i=0;i<8;i++) spawnFalling(); },400); setTimeout(()=>clearInterval(cf), 15000);
+function jumpDiceEffect(){
+    let diceImgs=document.querySelectorAll('.dice-layer img');
+    diceImgs.forEach(img=>{ img.classList.remove('jump'); void img.offsetWidth; img.classList.add('jump'); });
+    createParticles();
+    if(!diceSound.paused) diceSound.currentTime=0;
+    diceSound.play().catch(err=>console.warn('Dice sound playback failed:',err));
 }
 
-// expose manual burst
-$('#burstNow').onclick = ()=>{ for(let i=0;i<8;i++) launchRocket(rand(120,fw.width-120), rand(60, fw.height*0.6)); }
+function showFinalDice(){
+    diceLayer.style.opacity=1;
+    document.querySelectorAll('.dice-layer img').forEach((img,i)=>{img.src=`images/dice${finalDice[i]}.png`});
+    resultLabel.textContent=result;
+    resultLabel.style.opacity=1;
+}
 
-// -------------------- Popup --------------------
-const popup = $('#popup'); $('#popupNow').onclick = ()=>{ popup.classList.add('show'); setTimeout(()=>popup.classList.remove('show'),4500);} 
-// Auto show popup on load
-setTimeout(()=>{ popup.classList.add('show'); setTimeout(()=>popup.classList.remove('show'),4500); },700);
+function hideResultLabel(){
+    resultLabel.style.opacity=0;
+    resultLabel.textContent='';
+}
 
-// -------------------- Audio --------------------
-let audio; try{ audio = new Audio(); audio.src = 'data:audio/mp3;base64,//uQxAA...'; /* placeholder short base64 clip can be filled by user */ }catch(e){audio=null}
-let musicOn=false; $('#musicToggle').onclick = ()=>{ if(!audio) { alert('Trình duyệt không hỗ trợ audio inlined. Bạn có thể thêm file MP3 vào mã.'); return; } musicOn = !musicOn; audio.loop = musicOn; if(musicOn) audio.play().catch(()=>{}); else audio.pause(); $('#musicToggle').textContent = 'Nhạc: ' + (musicOn? 'bật' : 'tắt'); }
+function addHistoryDot(res){
+    let dot=document.createElement('div'); dot.classList.add('dot'); if(res==='Xỉu') dot.classList.add('xiu');
+    historyDotsContainer.appendChild(dot);
+    if(historyDotsContainer.children.length>15) historyDotsContainer.removeChild(historyDotsContainer.children[0]);
+}
 
-// -------------------- Toggles --------------------
-$('#flagsToggle').onclick = ()=>{ flagsEnabled = !flagsEnabled; $('#flagsToggle').textContent = 'Cờ rơi: ' + (flagsEnabled? 'Bật' : 'Tắt'); }
-let autoFireBtn = $('#autoToggle'); autoFireBtn.onclick = ()=>{ autoFireEnabled = !autoFireEnabled; autoFireBtn.textContent = 'Tự động pháo hoa: ' + (autoFireEnabled? 'Bật' : 'Tắt'); }
+function addHistoryDetail(res,dice){
+    let span=document.createElement('span'); span.textContent=`#${currentRound}: ${res} (${dice.join(',')})`;
+    span.style.background=res==='Tài'?'red':'blue';
+    historyDetailContainer.appendChild(span);
+    if(historyDetailContainer.children.length>16) historyDetailContainer.removeChild(historyDetailContainer.children[1]);
+}
 
-// -------------------- Share & Fullscreen --------------------
-$('#shareBtn').onclick = async ()=>{ const shareData = {title:document.title,text:'Chúc mừng Quốc khánh 2/9 — hãy xem trang mừng này!', url:location.href}; try{ await navigator.share(shareData);}catch(e){ prompt('Sao chép liên kết:', location.href);} }
-$('#fullBtn').onclick = ()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+function logHistory(){
+    historyData.push([currentRound,finalDice.join(','),result,bet||'None',betAmount,balance]);
+}
 
-// -------------------- Small polish: auto launch some rockets on idle --------------------
-let idle=0; setInterval(()=>{ idle++; if(idle>6 && Math.random()<0.6){ launchRocket(rand(120,fw.width-120), rand(80,fw.height*0.6)); idle=0;} },2500);
-window.addEventListener('pointerdown',()=>idle=0);
+function downloadHistory(){
+    if(typeof XLSX==='undefined') {
+        console.warn('XLSX library not loaded');
+        return;
+    }
+    const ws=XLSX.utils.aoa_to_sheet(historyData);
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'GameHistory');
+    XLSX.writeFile(wb,'TaiXiuHistory.xlsx');
+}
 
-// -------------------- Fin --------------------
-// Note: For legal reasons we did not include a full-length copyrighted music file. Replace data URL with your mp3 link or paste a small base64 clip.
+function createParticles(){
+    for(let i=0;i<10;i++){
+        let particle=document.createElement('div');
+        particle.classList.add('particle');
+        let x=70+Math.random()*60;
+        let y=60+Math.random()*60;
+        particle.style.left=`${x}px`;
+        particle.style.top=`${y}px`;
+        particle.style.animationDelay=`${Math.random()*0.5}s`;
+        diceLayer.appendChild(particle);
+        setTimeout(()=>{particle.remove();},1000);
+    }
+}
+
+function openBowl(){
+    if(bowlOpened) return;
+    bowlOpened=true;
+
+    addHistoryDot(result);
+    addHistoryDetail(result,finalDice);
+    logHistory();
+    if(bet && betAmount>0){
+        if(bet===result) balance+=betAmount;
+        else balance-=betAmount;
+        updateBalance();
+    }
+
+    const directions=['left','right','up'];
+    const randomDirection=directions[Math.floor(Math.random()*directions.length)];
+    bowl.classList.add(`bowl-jump-${randomDirection}`);
+
+    setTimeout(()=>{
+        bowl.style.left='50%';
+        bowl.style.top='30px';
+        bowl.style.transform='translateX(-50%)';
+        bowl.classList.remove(`bowl-jump-left`,`bowl-jump-right`,`bowl-jump-up`);
+        bet=null;
+        betAmount=0;
+        updateCurrentBet();
+        betConfirm.textContent='';
+        hideResultLabel();
+        startPhase(30,'bet');
+    },3000);
+}
+
+function startPhase(time,phaseName){
+    phase=phaseName; countdown=time;
+    if(phase==='bet'){
+        countdownDisplay.style.display='block';
+        bowl.classList.remove('active');
+        diceLayer.style.opacity=0;
+        hideResultLabel();
+    } else {
+        countdownDisplay.style.display='none';
+        bowl.classList.add('active');
+    }
+    clearInterval(countdownInterval);
+
+    if(phase==='bet'){
+        currentRound++; bowlOpened=false; finalDice=[]; bet=null; betAmount=0; betConfirm.textContent='';
+        updateCurrentBet(); updateRoundDisplay();
+    }
+
+    if(phase==='open'){
+        finalDice=[]; for(let i=0;i<3;i++) finalDice.push(Math.floor(Math.random()*6)+1);
+        let total=finalDice.reduce((a,b)=>a+b,0);
+        result=total>=11?'Tài':'Xỉu';
+        showFinalDice();
+        jumpDiceEffect();
+    }
+
+    countdownInterval=setInterval(()=>{
+        countdown--;
+        if(phase==='bet') countdownDisplay.textContent=countdown;
+        if(countdown<=0){
+            clearInterval(countdownInterval);
+            if(phase==='bet') startPhase(10,'open');
+            else if(phase==='open') openBowl();
+        }
+    },1000);
+}
+
+document.querySelectorAll('.quick-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        if(phase!=='bet') return;
+        let val=btn.dataset.amount==='all'?balance:parseInt(btn.dataset.amount);
+        betAmount+=val; if(betAmount>balance) betAmount=balance;
+        updateCurrentBet();
+    });
+});
+
+document.getElementById('resetBet').addEventListener('click',()=>{
+    if(phase==='bet'){ 
+        betAmount=0; 
+        bet=null; 
+        betConfirm.textContent=''; 
+        updateCurrentBet(); 
+    }
+});
+
+document.getElementById('betTai').addEventListener('click',()=>{
+    if(betAmount>0 && phase==='bet'){ 
+        bet='Tài'; 
+        betConfirm.textContent=`Bạn đã cược ${formatVND(betAmount)} vào Tài`; 
+    }
+});
+
+document.getElementById('betXiu').addEventListener('click',()=>{
+    if(betAmount>0 && phase==='bet'){ 
+        bet='Xỉu'; 
+        betConfirm.textContent=`Bạn đã cược ${formatVND(betAmount)} vào Xỉu`; 
+    }
+});
+
+document.getElementById('showRecharge').addEventListener('click',()=>{
+    let r=document.getElementById('rechargeQuick'); 
+    r.style.display=r.style.display==='none'?'block':'none';
+});
+
+document.querySelectorAll('.recharge-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{ 
+        balance+=parseInt(btn.dataset.amount); 
+        updateBalance(); 
+    });
+});
+
+toggleHistory.addEventListener('click',()=>{
+    historyDetailContainer.style.display=historyDetailContainer.style.display==='none'?'flex':'none';
+});
+
+downloadHistoryBtn.addEventListener('click',downloadHistory);
+
+let isDragging=false, startX, startY, bowlStartX, bowlStartY, shakeInterval;
+bowl.addEventListener('mousedown',e=>{
+    if(phase!=='open') return;
+    isDragging=true;
+    startX=e.clientX; startY=e.clientY;
+    let rect=bowl.getBoundingClientRect(), containerRect=gameContainer.getBoundingClientRect();
+    bowlStartX=rect.left-containerRect.left; 
+    bowlStartY=rect.top-containerRect.top;
+    bowl.style.cursor='grabbing';
+    bowl.classList.add('shake');
+    let offset=0;
+    shakeInterval=setInterval(()=>{ 
+        offset=offset===0?2:0; 
+        bowl.style.transform=`translateX(-50%) translate(${offset}px, ${offset}px)`; 
+    },50);
+});
+
+document.addEventListener('mousemove',e=>{
+    if(!isDragging) return;
+    let dx=e.clientX-startX, dy=e.clientY-startY;
+    let newLeft=Math.min(Math.max(bowlStartX+dx,0),gameContainer.clientWidth-bowl.clientWidth);
+    let newTop=Math.min(Math.max(bowlStartY+dy,0),gameContainer.clientHeight-bowl.clientHeight-110);
+    bowl.style.left=newLeft+'px';
+    bowl.style.top=newTop+'px';
+});
+
+document.addEventListener('mouseup',e=>{
+    if(!isDragging) return;
+    isDragging=false; 
+    bowl.style.cursor='grab';
+    bowl.classList.remove('shake');
+    clearInterval(shakeInterval);
+    bowl.style.transform='translateX(-50%)';
+    if(phase!=='open') return;
+    let cx=(gameContainer.clientWidth-bowl.clientWidth)/2;
+    let cy=30;
+    let distance=Math.hypot(parseFloat(bowl.style.left)-cx,parseFloat(bowl.style.top)-cy);
+    if(distance<80) openBowl();
+});
+
+music.addEventListener('error',()=>{
+    console.warn('Failed to load audio file: sounds/background.mp3 or sounds/background.ogg');
+    toggleBtn.textContent='🎵 Nhạc: Lỗi';
+    toggleBtn.classList.add('disabled');
+    toggleBtn.disabled=true;
+});
+
+diceSound.addEventListener('error',()=>{
+    console.warn('Failed to load audio file: sounds/dice.mp3 or sounds/dice.ogg');
+});
+
+music.addEventListener('canplay',()=>{
+    document.body.addEventListener('click',()=>{
+        if(!playing && !toggleBtn.disabled){
+            music.play().then(()=>{
+                playing=true;
+                toggleBtn.textContent='🎵 Nhạc: Bật';
+            }).catch(err=>{
+                console.warn('Audio playback failed:',err);
+                toggleBtn.textContent='🎵 Nhạc: Lỗi';
+                toggleBtn.classList.add('disabled');
+                toggleBtn.disabled=true;
+            });
+        }
+    },{once:true});
+});
+
+toggleBtn.addEventListener('click',()=>{
+    if(toggleBtn.disabled) return;
+    if(playing){
+        music.pause();
+        toggleBtn.textContent='🎵 Nhạc: Tắt';
+    }else{
+        music.play().then(()=>{
+            toggleBtn.textContent='🎵 Nhạc: Bật';
+        }).catch(err=>{
+            console.warn('Audio playback failed:',err);
+            toggleBtn.textContent='🎵 Nhạc: Lỗi';
+            toggleBtn.classList.add('disabled');
+            toggleBtn.disabled=true;
+        });
+    }
+    playing=!playing;
+});
+
+updateBalance(); updateCurrentBet(); updateRoundDisplay(); startPhase(30,'bet');
 </script>
 </body>
 </html>
